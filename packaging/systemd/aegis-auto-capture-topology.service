@@ -1,0 +1,30 @@
+[Unit]
+Description=Aegis AUTO source-owned native capture topology actor
+After=local-fs.target aegis-device-egress-guard.service
+Requires=aegis-device-egress-guard.service
+ConditionPathExists=/usr/local/lib/aegis/helpers/lib/aegis_auto_capture_topology.py
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=root
+Group=root
+ExecStartPre=/usr/bin/install -d -m 0755 -o root -g root /run/netns
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_capture_topology.py serve
+ExecStopPost=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_capture_topology.py cleanup
+RuntimeDirectory=aegis-auto-capture-topology
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+UMask=0077
+WatchdogSec=10s
+TimeoutStartSec=30s
+TimeoutStopSec=8s
+Restart=no
+KillMode=control-group
+NoNewPrivileges=yes
+# The named netns bind mounts must remain visible to guardian and PID1 relay.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET
+# Exact guardian/child namespace readback uses PTRACE_MODE_READ_FSCREDS.
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN CAP_SYS_PTRACE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN CAP_SYS_PTRACE
+

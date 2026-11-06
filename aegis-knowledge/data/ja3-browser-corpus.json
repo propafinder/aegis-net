@@ -1,0 +1,41 @@
+{
+  "version": "seed",
+  "fingerprints": [
+    {
+      "id": "chrome-tls13-generic",
+      "browser_family": "chrome",
+      "target_class": "https_ws",
+      "ja3_hash": "placeholder-chrome-ja3",
+      "alpn": ["h2", "http/1.1"],
+      "weight": 0.44,
+      "source_label": "seed-browser-baseline"
+    },
+    {
+      "id": "firefox-tls13-generic",
+      "browser_family": "firefox",
+      "target_class": "https_ws",
+      "ja3_hash": "placeholder-firefox-ja3",
+      "alpn": ["h2", "http/1.1"],
+      "weight": 0.34,
+      "source_label": "seed-browser-baseline"
+    },
+    {
+      "id": "chrome-legacy-http11-generic",
+      "browser_family": "chrome",
+      "target_class": "legacy_tls",
+      "ja3_hash": "placeholder-chrome-legacy-http11-ja3",
+      "alpn": ["http/1.1"],
+      "weight": 0.28,
+      "source_label": "seed-browser-baseline"
+    },
+    {
+      "id": "chrome-masque-generic",
+      "browser_family": "chrome",
+      "target_class": "masque_derived",
+      "ja3_hash": "placeholder-chrome-masque-ja3",
+      "alpn": ["h3", "masque"],
+      "weight": 0.22,
+      "source_label": "seed-browser-baseline"
+    }
+  ]
+}

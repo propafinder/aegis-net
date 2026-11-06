@@ -1,0 +1,16 @@
+{
+  "version": "seed",
+  "histograms": {
+    "client_hello_to_first_response_ms": {
+      "p50": 90,
+      "p90": 220,
+      "p99": 650
+    },
+    "first_five_packet_size_bytes": {
+      "p50": 980,
+      "p90": 1400,
+      "p99": 1500
+    }
+  },
+  "source_label": "seed-reference-timing"
+}

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Only enabled by the source-pinned S20 root bridge operator. No sudo policy
+# or user credential is modified. The bridge rejects all other operations.
+[ -n "${AEGIS_CAPTURE_BRIDGE:-}" ] && [ -n "${AEGIS_CAPTURE_SOCKET:-}" ] || exit 3
+exec /usr/bin/python3 -I "$AEGIS_CAPTURE_BRIDGE" client "$@"

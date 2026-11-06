@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rendered by install-macos-client.sh when the operator explicitly selects
+  LaunchDaemon mode. The daemon is loaded in the system launchd domain but
+  drops to the dedicated client user via UserName/GroupName.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>dev.aegis.client</string>
+
+    <key>UserName</key>
+    <string>__AEGIS_CLIENT_USER__</string>
+
+    <key>GroupName</key>
+    <string>__AEGIS_CLIENT_GROUP__</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__AEGIS_CLIENT_BIN__</string>
+        <string>--config</string>
+        <string>__AEGIS_CLIENT_CONFIG__</string>
+        <string>--runtime-events-jsonl</string>
+        <string>__AEGIS_CLIENT_RUNTIME_EVENTS_JSONL__</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>RUST_LOG</key>
+        <string>info</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>__AEGIS_CLIENT_STATE_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>2</integer>
+
+    <key>StandardOutPath</key>
+    <string>__AEGIS_CLIENT_LOG_DIR__/aegis-client.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__AEGIS_CLIENT_LOG_DIR__/aegis-client.err.log</string>
+</dict>
+</plist>

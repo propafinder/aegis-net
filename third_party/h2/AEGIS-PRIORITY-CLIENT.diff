@@ -1,0 +1,10 @@
+--- a/src/client.rs
++++ b/src/client.rs
+@@ -1656,6 +1656,7 @@
+ 
+         // Create the HEADERS frame
+         let mut frame = Headers::new(id, pseudo, headers);
++        frame.set_measured_chrome_priority();
+ 
+         if end_of_stream {
+             frame.set_end_stream()

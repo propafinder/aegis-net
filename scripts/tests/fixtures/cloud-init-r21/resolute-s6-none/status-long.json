@@ -1,0 +1,47 @@
+{
+  "boot_status_code": "enabled-by-sysvinit",
+  "datasource": "none",
+  "detail": "DataSourceNone",
+  "errors": [],
+  "extended_status": "degraded running",
+  "init": {
+    "errors": [],
+    "finished": 116387.6,
+    "recoverable_errors": {
+      "WARNING": [
+        "Failed generating key type rsa to file /etc/ssh/ssh_host_rsa_key",
+        "Failed generating key type ecdsa to file /etc/ssh/ssh_host_ecdsa_key",
+        "Failed generating key type ed25519 to file /etc/ssh/ssh_host_ed25519_key"
+      ]
+    },
+    "start": 116387.56
+  },
+  "init-local": {
+    "errors": [],
+    "finished": 116387.45,
+    "recoverable_errors": {},
+    "start": 116387.45
+  },
+  "last_update": "Fri, 02 Jan 1970 08:19:47 +0000",
+  "modules-config": {
+    "errors": [],
+    "finished": null,
+    "recoverable_errors": {},
+    "start": null
+  },
+  "modules-final": {
+    "errors": [],
+    "finished": null,
+    "recoverable_errors": {},
+    "start": null
+  },
+  "recoverable_errors": {
+    "WARNING": [
+      "Failed generating key type rsa to file /etc/ssh/ssh_host_rsa_key",
+      "Failed generating key type ecdsa to file /etc/ssh/ssh_host_ecdsa_key",
+      "Failed generating key type ed25519 to file /etc/ssh/ssh_host_ed25519_key"
+    ]
+  },
+  "stage": null,
+  "status": "running"
+}

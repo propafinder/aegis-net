@@ -1,0 +1,21 @@
+[Unit]
+Description=AEGIS foreign firewall policy monitor
+DefaultDependencies=no
+BindsTo=aegis-device-egress-guard.service
+PartOf=aegis-device-egress-guard.service
+Wants=aegis-auto-guardian-watchdog.service
+After=local-fs.target ufw.service aegis-device-egress-guard.service aegis-auto-guardian-watchdog.service aegis-auto-terminal-transition.service
+Before=network-pre.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_foreign_monitor.py
+ExecStopPost=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_foreign_monitor.py --stopped
+Restart=always
+RestartSec=1
+TimeoutStopSec=80
+NoNewPrivileges=yes
+UMask=0077
+[Install]
+WantedBy=aegis-device-egress-guard.service

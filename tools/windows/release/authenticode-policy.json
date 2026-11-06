@@ -1,0 +1,12 @@
+{
+  "schema": "aegis_windows_authenticode_policy_v2",
+  "publisher_certificate_sha256": null,
+  "timestamp_protocol": "rfc3161",
+  "timestamp_attribute_oid": "1.3.6.1.4.1.311.3.3.1",
+  "rfc3161_structural_verifier": null,
+  "provider_attestation_verifier": null,
+  "authenticode_provider_sha256": null,
+  "rfc3161_structural_verifier_sha256": null,
+  "provider_attestation_verifier_sha256": null,
+  "wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+}

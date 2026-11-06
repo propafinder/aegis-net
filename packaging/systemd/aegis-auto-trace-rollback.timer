@@ -1,0 +1,10 @@
+[Unit]
+Description=Aegis AUTO trace table bounded emergency timer
+
+[Timer]
+OnActiveSec=12s
+AccuracySec=1ms
+RandomizedDelaySec=0
+Persistent=false
+Unit=aegis-auto-trace-rollback.service
+

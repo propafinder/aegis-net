@@ -1,0 +1,11 @@
+[package]
+name = "aegis-fingerprint"
+version = "0.3.12"
+edition.workspace = true
+license.workspace = true
+description = "AEGIS shared TLS ClientHello parsing and fingerprint witness helpers"
+
+[dependencies]
+aegis-core = { version = "0.3.50", path = "../aegis-core" }
+serde.workspace = true
+rand.workspace = true

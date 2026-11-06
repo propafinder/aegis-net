@@ -1,0 +1,35 @@
+{
+  "version": "seed",
+  "files": [
+    {
+      "path": "ja3-browser-corpus.json",
+      "sha256": "c293f75c3d874175fe12ce45bc7f3db7885dbf00ae8bd7f3e1031834dfd89b0b",
+      "source_kind": "browser-fingerprint-corpus",
+      "source_label": "seed-browser-baseline"
+    },
+    {
+      "path": "dpi-signatures-cn.yaml",
+      "sha256": "a991ba01421eca4f4a844bc5724d031e60c6b8452cc00e060be19234244d07b9",
+      "source_kind": "dpi-signature-document",
+      "source_label": "seed-cn-dpi-risk"
+    },
+    {
+      "path": "dpi-signatures-ru.yaml",
+      "sha256": "1a201e0bb48462dbf974ed6871fe37c2bfac0940c4eda767f8d60f83f48fa0a7",
+      "source_kind": "dpi-signature-document",
+      "source_label": "seed-ru-dpi-risk"
+    },
+    {
+      "path": "dpi-signatures-ir.yaml",
+      "sha256": "71df231076ed5a116e0aee20cc27997b0d5307a3b032e3aac65b45fad2ffbc50",
+      "source_kind": "dpi-signature-document",
+      "source_label": "seed-ir-dpi-risk"
+    },
+    {
+      "path": "reference-timing.json",
+      "sha256": "7f32f9dd64392cd3bd3080adbe0d95de4771559eda24d513a3ab5d50efb545aa",
+      "source_kind": "reference-timing",
+      "source_label": "seed-reference-timing"
+    }
+  ]
+}

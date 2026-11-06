@@ -1,0 +1,33 @@
+[Unit]
+Description=Aegis AUTO one-use independent witness topology actor
+After=local-fs.target
+Before=aegis-auto-guardian.service
+ConditionPathExists=/usr/local/lib/aegis/helpers/lib/aegis_auto_witness_topology.py
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=root
+Group=root
+ExecStartPre=/usr/bin/install -d -m 0755 -o root -g root /run/netns
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_witness_topology.py serve
+ExecStopPost=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_witness_topology.py cleanup
+RuntimeDirectory=aegis-auto-topology
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+UMask=0077
+WatchdogSec=10s
+TimeoutStartSec=10s
+TimeoutStopSec=6s
+Restart=on-failure
+RestartSec=1s
+NoNewPrivileges=yes
+# The named network namespace mount must be visible to the guardian and to
+# ExecStopPost, including when PID1 starts those processes separately.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET
+# The exact guardian /proc/PID/ns/net readback uses PTRACE_MODE_READ_FSCREDS.
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN CAP_SYS_PTRACE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_ADMIN CAP_SYS_PTRACE
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+table ip aegis_auto_local_redirect { # handle 1
+	chain output { # handle 1
+		type nat hook output priority -100; policy accept;
+		socket cgroupv2 level 2 1 counter packets 0 bytes 0 return comment "aegis-local-5b26524230d703d39acb8baf4309ea977ff6c4c00167493848313a7483849780" # handle 2
+		oifname "veth0" ct direction reply ct mark 0xa3610002 ct original proto-dst 22 tcp sport 22 counter packets 0 bytes 0 return comment "aegis-local-5b26524230d703d39acb8baf4309ea977ff6c4c00167493848313a7483849780" # handle 3
+		oifname "veth0" udp sport 68 udp dport 67 socket cgroupv2 level 2 "docker/115419f744544a3de2239b39d2dd2941f9b20607af4c151356a6b2ecf3d4a93b" counter packets 0 bytes 0 return comment "aegis-local-5b26524230d703d39acb8baf4309ea977ff6c4c00167493848313a7483849780" # handle 4
+		udp dport 53 counter packets 0 bytes 0 redirect to :53 comment "aegis-local-5b26524230d703d39acb8baf4309ea977ff6c4c00167493848313a7483849780" # handle 5
+		oifname "lo" counter packets 0 bytes 0 return comment "aegis-local-5b26524230d703d39acb8baf4309ea977ff6c4c00167493848313a7483849780" # handle 6
+		meta l4proto udp counter packets 0 bytes 0 redirect to :15081 comment "aegis-local-5b26524230d703d39acb8baf4309ea977ff6c4c00167493848313a7483849780" # handle 7
+		meta l4proto tcp counter packets 0 bytes 0 redirect to :980 comment "aegis-local-5b26524230d703d39acb8baf4309ea977ff6c4c00167493848313a7483849780" # handle 8
+	}
+}

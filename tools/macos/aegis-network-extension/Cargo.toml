@@ -1,0 +1,69 @@
+[package]
+name = "aegis-network-extension"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = false
+# Independent private scaffold; adoption must resolve/review the exact lockfile.
+[workspace]
+[features]
+default = []
+client-engine = ["dep:aegis-client", "dep:aegis-core", "dep:tokio", "dep:serde_json", "dep:anyhow", "dep:h2", "dep:bytes"]
+apple = ["client-engine", "dep:libc", "dep:objc2", "dep:block2", "dep:objc2-foundation", "dep:objc2-network-extension", "dep:objc2-system-extensions", "dep:dispatch2", "dep:toml", "dep:zeroize", "dep:subtle", "dep:tokio-rustls", "dep:http", "dep:sha2", "dep:tokio-tungstenite", "dep:aegis-web-carrier"]
+sfu-media-vp8 = ["apple", "dep:aegis-webrtc", "aegis-webrtc/sfu-media-vp8"]
+enrolled-quic = ["apple"]
+[dependencies]
+aegis-client = { path = "../../../aegis-client", version = "0.3.50", default-features = false, optional = true }
+aegis-core = { path = "../../../aegis-core", version = "0.3.50", default-features = false, optional = true }
+aegis-web-carrier = { path = "../../../aegis-web-carrier", version = "0.1.0", optional = true }
+aegis-webrtc = { path = "../../../aegis-webrtc", version = "0.1.0", default-features = false, optional = true }
+tokio-tungstenite = { version = "=0.24.0", optional = true }
+tokio = { version = "=1.53.3", features = ["rt", "net", "sync", "time", "macros"], optional = true }
+serde_json = { version = "=1.0.149", optional = true }
+anyhow = { version = "=1.0.103", optional = true }
+toml = { version = "=0.8.23", optional = true }
+http = { version = "=1.4.0", optional = true }
+zeroize = { version = "=1.8.2", optional = true }
+subtle = { version = "=2.6.1", optional = true }
+sha2 = { version = "=0.10.9", optional = true }
+tokio-rustls = { version = "=0.26.4", optional = true }
+# S16h pooled outer sessions: the same audited h2 (patched below) and bytes.
+h2 = { version = "=0.4.16", optional = true }
+bytes = { version = "=1.12.1", optional = true }
+[dev-dependencies]
+bytes = "=1.12.1"
+h2 = "=0.4.16"
+rcgen = "=0.13.2"
+# v34: tests only, paused time for the stream window over a delayed link.
+# No second exact pin: this follows the [dependencies] pin above (one tokio
+# for the crate, whatever that pin becomes); test-util adds no crate, so
+# Cargo.lock is unchanged.
+tokio = { version = "1", features = ["test-util"] }
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = { version = "=0.2.190", optional = true }
+objc2 = { version = "=0.6.3", optional = true }
+block2 = { version = "=0.6.2", optional = true }
+objc2-foundation = { version = "=0.3.2", optional = true }
+objc2-network-extension = { version = "=0.3.2", features = ["block2"], optional = true }
+objc2-system-extensions = { version = "=0.3.2", features = ["dispatch2"], optional = true }
+dispatch2 = { version = "=0.3.0", optional = true }
+
+# Keep the extension's independent workspace on the same audited h2 source as
+# the client workspace. The local patch preserves Aegis's HTTP/2 header order.
+[patch.crates-io]
+h2 = { version = "0.4.16", path = "../../../third_party/h2" }
+tungstenite = { version = "0.24.0", path = "../../../third_party/tungstenite" }
+
+[[bin]]
+name = "aegis-ne-host"
+path = "src/bin/host.rs"
+required-features = ["apple"]
+[[bin]]
+name = "aegis-ne-provider"
+path = "src/bin/provider.rs"
+required-features = ["apple"]
+
+[[bin]]
+name = "aegis-ne-observe-child"
+path = "src/bin/observe_child.rs"
+required-features = ["apple"]

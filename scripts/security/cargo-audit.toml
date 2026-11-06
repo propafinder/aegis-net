@@ -1,0 +1,11 @@
+# cargo-audit includes every package retained in Cargo.lock, including disabled
+# optional dependencies. smoltcp 0.12 declares defmt as optional; AEGIS builds
+# it with default-features=false and never enables defmt, so proc-macro-error2
+# is absent from Cargo's resolved graph. The contract
+# test-cargo-audit-policy-contract.sh fails if that assumption stops being true.
+[advisories]
+ignore = ["RUSTSEC-2026-0173"]
+
+[output]
+deny = ["warnings"]
+quiet = false

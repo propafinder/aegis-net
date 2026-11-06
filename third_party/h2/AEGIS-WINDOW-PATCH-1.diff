@@ -1,0 +1,321 @@
+--- a/src/share.rs
++++ b/src/share.rs
+@@ -539,0 +540,63 @@
++
++    // AEGIS PATCH (receive window): upstream h2 can only re-open what was
++    // received, so a stream's window never exceeds the SETTINGS initial
++    // window. See third_party/h2/AEGIS-PATCH.md, "Per-stream receive window".
++
++    /// Grow this stream's receive window by `sz` bytes of new credit.
++    ///
++    /// Unlike [`release_capacity`], this grants credit for data not yet
++    /// received, on this stream only: no connection capacity is released and
++    /// no connection WINDOW_UPDATE follows. The stream WINDOW_UPDATE is
++    /// queued, and the connection task woken, exactly as for a release: at
++    /// once when the unannounced credit reaches half the window the peer
++    /// knows, otherwise with the next update.
++    ///
++    /// # Errors
++    ///
++    /// Nothing changes and the error's [`reason`] is
++    /// `Some(Reason::FLOW_CONTROL_ERROR)` when the window would exceed
++    /// 2^31-1 (RFC 9113 §6.9.1), counting received bytes not yet released,
++    /// or `Some(Reason::STREAM_CLOSED)` when the stream no longer receives.
++    /// A later local SETTINGS_INITIAL_WINDOW_SIZE increase adds to a grown
++    /// window, so callers keep growth plus that setting within 2^31-1.
++    ///
++    /// [`release_capacity`]: #method.release_capacity
++    /// [`reason`]: struct.Error.html#method.reason
++    pub fn grow_window(&mut self, sz: usize) -> Result<(), crate::Error> {
++        if sz > proto::MAX_WINDOW_SIZE as usize {
++            return Err(Reason::FLOW_CONTROL_ERROR.into());
++        }
++        self.inner
++            .grow_recv_window(sz as proto::WindowSize)
++            .map_err(Into::into)
++    }
++
++    /// Re-open this stream's receive window `sz` bytes less from now on.
++    ///
++    /// Credit already announced to the peer is not revoked and no frame is
++    /// sent. Released bytes refill the difference before the next stream
++    /// WINDOW_UPDATE, so [`peer_window_size`] falls to the lowered window as
++    /// the peer sends. Connection capacity is released as before.
++    ///
++    /// # Errors
++    ///
++    /// Nothing changes and the error's reason is
++    /// `Some(Reason::FLOW_CONTROL_ERROR)` when `sz` exceeds the window this
++    /// stream re-opens to, or `Some(Reason::STREAM_CLOSED)` when the stream
++    /// no longer receives.
++    ///
++    /// [`peer_window_size`]: #method.peer_window_size
++    pub fn shrink_window(&mut self, sz: usize) -> Result<(), crate::Error> {
++        if sz > proto::MAX_WINDOW_SIZE as usize {
++            return Err(Reason::FLOW_CONTROL_ERROR.into());
++        }
++        self.inner
++            .shrink_recv_window(sz as proto::WindowSize)
++            .map_err(Into::into)
++    }
++
++    /// The stream window announced to the peer and not yet used by data
++    /// received: an upper bound on what the peer may still send on it.
++    pub fn peer_window_size(&self) -> usize {
++        self.inner.peer_recv_window() as usize
++    }
+@@ -606,0 +670,254 @@
++
++// AEGIS PATCH (receive window): the public API on the wire, between a real h2
++// client and server, with every frame the client sends recorded on the way.
++#[cfg(test)]
++mod aegis_receive_window_tests {
++    use crate::{client, server, Reason, RecvStream, SendStream};
++    use bytes::Bytes;
++    use std::sync::{Arc, Mutex};
++    use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream, ReadHalf, WriteHalf};
++
++    const WINDOW: u32 = 131_072;
++    const MAX: usize = (1 << 31) - 1;
++    const WINDOW_UPDATE: u8 = 0x8;
++    /// Scheduler turns for every ready task to finish on a current-thread
++    /// runtime. Nothing here waits on a timer or on any other wake.
++    const TURNS: usize = 256;
++
++    /// (frame type, stream id, WINDOW_UPDATE increment or 0), in send order.
++    type Sent = Arc<Mutex<Vec<(u8, u32, u32)>>>;
++
++    async fn turns(mut done: impl FnMut() -> bool) -> bool {
++        for _ in 0..TURNS {
++            if done() {
++                return true;
++            }
++            tokio::task::yield_now().await;
++        }
++        done()
++    }
++
++    /// Forwards the client's bytes to the server, recording every frame.
++    async fn record(mut from: ReadHalf<DuplexStream>, mut to: WriteHalf<DuplexStream>, sent: Sent) {
++        let mut preface = [0; 24];
++        if from.read_exact(&mut preface).await.is_err() || to.write_all(&preface).await.is_err() {
++            return;
++        }
++        loop {
++            let mut head = [0; 9];
++            if from.read_exact(&mut head).await.is_err() {
++                return;
++            }
++            let mut payload = vec![0; u32::from_be_bytes([0, head[0], head[1], head[2]]) as usize];
++            if from.read_exact(&mut payload).await.is_err() {
++                return;
++            }
++            let stream = u32::from_be_bytes([head[5], head[6], head[7], head[8]]) & 0x7fff_ffff;
++            let increment = if head[3] == WINDOW_UPDATE {
++                u32::from_be_bytes([payload[0], payload[1], payload[2], payload[3]]) & 0x7fff_ffff
++            } else {
++                0
++            };
++            sent.lock().unwrap().push((head[3], stream, increment));
++            if to.write_all(&head).await.is_err() || to.write_all(&payload).await.is_err() {
++                return;
++            }
++        }
++    }
++
++    struct Exchange {
++        sent: Sent,
++        driver: tokio::task::JoinHandle<Result<(), crate::Error>>,
++        stream_id: u32,
++        body: RecvStream,
++        send: SendStream<Bytes>,
++        _held: (http::Request<RecvStream>, SendStream<Bytes>),
++    }
++
++    impl Exchange {
++        /// One GET answered 200 with an open body, settled: the server may
++        /// send exactly the initial stream window.
++        async fn open() -> Exchange {
++            let (client_io, tap_client) = tokio::io::duplex(1 << 20);
++            let (tap_server, server_io) = tokio::io::duplex(1 << 20);
++            let sent = Sent::default();
++            let (from_client, mut to_client) = tokio::io::split(tap_client);
++            let (mut from_server, to_server) = tokio::io::split(tap_server);
++            tokio::spawn(record(from_client, to_server, sent.clone()));
++            tokio::spawn(async move {
++                let _ = tokio::io::copy(&mut from_server, &mut to_client).await;
++            });
++            let (accepted, answered) = tokio::sync::oneshot::channel();
++            tokio::spawn(async move {
++                let mut connection = server::handshake(server_io).await.unwrap();
++                let (request, mut respond) = connection.accept().await.unwrap().unwrap();
++                let send = respond
++                    .send_response(http::Response::new(()), false)
++                    .unwrap();
++                accepted.send((request, send)).ok().unwrap();
++                while let Some(Ok(_)) = connection.accept().await {}
++            });
++            let (mut client, connection) = client::Builder::new()
++                .initial_window_size(WINDOW)
++                .initial_connection_window_size(1 << 20)
++                .handshake::<_, Bytes>(client_io)
++                .await
++                .unwrap();
++            let driver = tokio::spawn(connection);
++            let request = http::Request::get("https://example.test/")
++                .body(())
++                .unwrap();
++            let (response, request_body) = client.send_request(request, false).unwrap();
++            let (request, mut send) = answered.await.unwrap();
++            let body = response.await.unwrap().into_body();
++            let stream_id = body.stream_id().as_u32();
++            send.reserve_capacity(1 << 20);
++            assert!(turns(|| send.capacity() == WINDOW as usize).await);
++            Exchange {
++                sent,
++                driver,
++                stream_id,
++                body,
++                send,
++                _held: (request, request_body),
++            }
++        }
++
++        /// Frames the client sent from `mark` on, after everything settled.
++        async fn sent_since(&self, mark: usize) -> Vec<(u8, u32, u32)> {
++            turns(|| false).await;
++            self.sent.lock().unwrap()[mark..].to_vec()
++        }
++
++        fn mark(&self) -> usize {
++            self.sent.lock().unwrap().len()
++        }
++
++        /// Reads `len` body bytes, releasing each chunk as it arrives.
++        async fn read_releasing(&mut self, len: usize) {
++            let mut read = 0;
++            while read < len {
++                let chunk = self.body.data().await.unwrap().unwrap();
++                read += chunk.len();
++                self.body
++                    .flow_control()
++                    .release_capacity(chunk.len())
++                    .unwrap();
++            }
++            assert_eq!(read, len);
++        }
++    }
++
++    #[tokio::test]
++    async fn grow_window_sends_one_stream_window_update_that_the_peer_may_use() {
++        let mut exchange = Exchange::open().await;
++        let id = exchange.stream_id;
++        let mut flow = exchange.body.flow_control().clone();
++        let mark = exchange.mark();
++
++        // Nothing else is pending: without the wake grow_window owes, its
++        // WINDOW_UPDATE would wait for an unrelated frame.
++        flow.grow_window(WINDOW as usize).unwrap();
++        assert_eq!(flow.available_capacity(), 2 * WINDOW as isize);
++        assert!(turns(|| exchange.mark() > mark).await);
++        assert_eq!(
++            exchange.sent_since(mark).await,
++            [(WINDOW_UPDATE, id, WINDOW)]
++        );
++        assert_eq!(flow.peer_window_size(), 2 * WINDOW as usize);
++
++        // The peer may send twice the initial window with nothing read.
++        assert!(turns(|| exchange.send.capacity() == 2 * WINDOW as usize).await);
++        exchange
++            .send
++            .send_data(Bytes::from(vec![7; 2 * WINDOW as usize]), false)
++            .unwrap();
++        assert!(turns(|| flow.used_capacity() == 2 * WINDOW as usize).await);
++        assert_eq!(flow.peer_window_size(), 0);
++        assert_eq!(exchange.sent_since(mark).await.len(), 1);
++
++        // Released as read, the stream re-opens to its grown window.
++        exchange.read_releasing(2 * WINDOW as usize).await;
++        turns(|| false).await;
++        let target = flow.available_capacity() as usize + flow.used_capacity();
++        assert_eq!(target, 2 * WINDOW as usize);
++
++        // Growth past 2^31-1 is refused, typed, with nothing sent.
++        let mark = exchange.mark();
++        let peer = flow.peer_window_size();
++        for refused in [MAX - target + 1, MAX, MAX + 1, usize::MAX] {
++            let error = flow.grow_window(refused).unwrap_err();
++            assert_eq!(error.reason(), Some(Reason::FLOW_CONTROL_ERROR));
++        }
++        assert!(exchange.sent_since(mark).await.is_empty());
++
++        // Exactly to the limit is announced and accepted by the peer.
++        flow.grow_window(MAX - target).unwrap();
++        let expected = [(WINDOW_UPDATE, id, (MAX - peer) as u32)];
++        assert_eq!(exchange.sent_since(mark).await, expected);
++        assert_eq!(flow.peer_window_size(), MAX);
++        let error = flow.grow_window(1).unwrap_err();
++        assert_eq!(error.reason(), Some(Reason::FLOW_CONTROL_ERROR));
++
++        // Neither side's connection task panicked; the stream still carries data.
++        exchange
++            .send
++            .send_data(Bytes::from_static(b"after"), false)
++            .unwrap();
++        let chunk = exchange.body.data().await.unwrap().unwrap();
++        assert_eq!(&chunk[..], b"after");
++        assert!(!exchange.driver.is_finished());
++    }
++
++    #[tokio::test]
++    async fn shrink_window_lets_the_peer_credit_fall_back_while_the_connection_reopens() {
++        let mut exchange = Exchange::open().await;
++        let id = exchange.stream_id;
++        let mut flow = exchange.body.flow_control().clone();
++        flow.grow_window(WINDOW as usize).unwrap();
++        assert!(turns(|| flow.peer_window_size() == 2 * WINDOW as usize).await);
++
++        let mark = exchange.mark();
++        flow.shrink_window(WINDOW as usize).unwrap();
++        // Nothing is sent, and credit already announced is not revoked.
++        assert!(exchange.sent_since(mark).await.is_empty());
++        assert_eq!(flow.peer_window_size(), 2 * WINDOW as usize);
++        assert_eq!(flow.available_capacity(), WINDOW as isize);
++        let error = flow.shrink_window(WINDOW as usize + 1).unwrap_err();
++        assert_eq!(error.reason(), Some(Reason::FLOW_CONTROL_ERROR));
++
++        let total = 3 * WINDOW as usize;
++        exchange.send.reserve_capacity(total);
++        exchange
++            .send
++            .send_data(Bytes::from(vec![9; total]), false)
++            .unwrap();
++        exchange.read_releasing(total).await;
++        let sent = exchange.sent_since(mark).await;
++
++        // The stream was re-granted at most what keeps the peer's credit at
++        // the lowered window: 2W held + granted - 3W sent <= W.
++        let granted: u64 = sent
++            .iter()
++            .filter(|&&(kind, stream, _)| kind == WINDOW_UPDATE && stream == id)
++            .map(|&(_, _, increment)| u64::from(increment))
++            .sum();
++        assert!(
++            granted >= u64::from(WINDOW) && granted <= 2 * u64::from(WINDOW),
++            "{granted}"
++        );
++        assert!(flow.peer_window_size() <= WINDOW as usize);
++        assert_eq!(
++            flow.available_capacity() as usize + flow.used_capacity(),
++            WINDOW as usize
++        );
++        // The connection window was re-opened for every byte as usual.
++        let reopened: u64 = sent
++            .iter()
++            .filter(|&&(kind, stream, _)| kind == WINDOW_UPDATE && stream == 0)
++            .map(|&(_, _, increment)| u64::from(increment))
++            .sum();
++        assert!(reopened >= total as u64 / 2, "{reopened}");
++        assert!(!exchange.driver.is_finished());
++    }
++}

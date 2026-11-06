@@ -1,0 +1,36 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloudNet [seed=ds_config_seedfrom,ftp://seed.invalid:2121/]",
+  "init": {
+   "errors": [],
+   "finished": 116386.51,
+   "recoverable_errors": {
+    "WARNING": [
+     "Failed generating key type rsa to file /etc/ssh/ssh_host_rsa_key",
+     "Failed generating key type ecdsa to file /etc/ssh/ssh_host_ecdsa_key",
+     "Failed generating key type ed25519 to file /etc/ssh/ssh_host_ed25519_key"
+    ]
+   },
+   "start": 116386.31
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 116386.21,
+   "recoverable_errors": {},
+   "start": 116386.2
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "modules-final": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "stage": null
+ }
+}

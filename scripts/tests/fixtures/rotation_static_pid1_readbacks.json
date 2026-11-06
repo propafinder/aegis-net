@@ -1,0 +1,220 @@
+{
+ "schema": "aegis_rotation_static_pid1_readbacks_v1",
+ "note": "verbatim systemctl show/list-jobs stdout captured on real PID1 in disposable --network none containers; parser fixture only",
+ "timer_names": [
+  "Id",
+  "LoadState",
+  "FragmentPath",
+  "ActiveState",
+  "SubState",
+  "InvocationID",
+  "UnitFileState",
+  "Triggers",
+  "TriggeredBy",
+  "NextElapseUSecRealtime",
+  "NextElapseUSecMonotonic"
+ ],
+ "service_names": [
+  "Id",
+  "LoadState",
+  "FragmentPath",
+  "ActiveState",
+  "SubState",
+  "InvocationID",
+  "UnitFileState",
+  "Triggers",
+  "TriggeredBy",
+  "MainPID",
+  "ControlPID",
+  "ControlGroup",
+  "NFileDescriptorStore"
+ ],
+ "platforms": [
+  {
+   "platform": "ubuntu-24.04",
+   "systemd": "systemd 255 (255.4-1ubuntu8.18)",
+   "source": "r20/review-codex-1db19afb-r1/runs/u255-static-r1/probe.json",
+   "source_sha256": "7c898e8c2aca79d25f78004355d88d51ed4db78c0b9a5c23c4c162f232f43a5b",
+   "states": [
+    {
+     "label": "S0-never-started",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S1-timer-waiting",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=1d 3h 48min 44.806315s\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=waiting\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=469ec528f87d4b23b0867e95f3c4277a\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S2-service-activating",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=469ec528f87d4b23b0867e95f3c4277a\n",
+     "service_stdout": "MainPID=302\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=/system.slice/aegis-auto-trace-rollback.service\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=activating\nSubState=start\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=eae0ff90f4534e8289f242c9713f4d0a\n",
+     "list_jobs_stdout": "150 aegis-auto-trace-rollback.service start running\n"
+    },
+    {
+     "label": "S3-after-service-ran",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=elapsed\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=469ec528f87d4b23b0867e95f3c4277a\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=eae0ff90f4534e8289f242c9713f4d0a\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S4-both-stopped-after-fire",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S5-timer-stopped-before-elapse",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S6-timer-start-no-block",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=1d 3h 49min 1.356424s\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=waiting\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=beeb0d3a710a46abbda5eea21d204ee5\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S7-files-removed-before-reload",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S8-not-found-after-reload",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    }
+   ]
+  },
+  {
+   "platform": "debian-12",
+   "systemd": "systemd 252 (252.39-1~deb12u2)",
+   "source": "r20/review-codex-1db19afb-r1/runs/u252-static-r1/probe.json",
+   "source_sha256": "fcde65eae59fdbedfd2668cb8cbc556bc273b060cc5c60ee33d96fdcbf9ce12a",
+   "states": [
+    {
+     "label": "S0-never-started",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S1-timer-waiting",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=1d 3h 50min 13.444426s\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=waiting\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=95bd8cef85a442499e21923a4ed0f54a\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S2-service-activating",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=95bd8cef85a442499e21923a4ed0f54a\n",
+     "service_stdout": "MainPID=268\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=/system.slice/aegis-auto-trace-rollback.service\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=activating\nSubState=start\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=49012f0b2e824639be4bd2bec7df881d\n",
+     "list_jobs_stdout": "395 aegis-auto-trace-rollback.service start running\n"
+    },
+    {
+     "label": "S3-after-service-ran",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=elapsed\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=95bd8cef85a442499e21923a4ed0f54a\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=49012f0b2e824639be4bd2bec7df881d\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S4-both-stopped-after-fire",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S5-timer-stopped-before-elapse",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S6-timer-start-no-block",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=1d 3h 50min 29.974614s\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=waiting\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=087e2f772d8e4fc4a7b9eca300110888\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S7-files-removed-before-reload",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S8-not-found-after-reload",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    }
+   ]
+  },
+  {
+   "platform": "almalinux-9",
+   "systemd": "systemd 252 (252-67.el9_8.6.alma.1)",
+   "source": "r20/review-codex-1db19afb-r1/runs/alma9-252-static-r1/probe.json",
+   "source_sha256": "408f7a06b0eac8ab1ccde096ce34ea176a6076880eb4d1eeb28e480b1d172fb7",
+   "states": [
+    {
+     "label": "S0-never-started",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S1-timer-waiting",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=1d 3h 54min 3.003614s\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=waiting\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=8a57b1f3e2034e33b726c483e77b5b4a\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S2-service-activating",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=8a57b1f3e2034e33b726c483e77b5b4a\n",
+     "service_stdout": "MainPID=205\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=/system.slice/aegis-auto-trace-rollback.service\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=activating\nSubState=start\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=31e22fa0847448538d2cf3709125c1f1\n",
+     "list_jobs_stdout": "86 aegis-auto-trace-rollback.service start running\n"
+    },
+    {
+     "label": "S3-after-service-ran",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=elapsed\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=8a57b1f3e2034e33b726c483e77b5b4a\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=31e22fa0847448538d2cf3709125c1f1\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S4-both-stopped-after-fire",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S5-timer-stopped-before-elapse",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S6-timer-start-no-block",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=1d 3h 54min 19.321928s\nId=aegis-auto-trace-rollback.timer\nTriggers=aegis-auto-trace-rollback.service\nTriggeredBy=\nLoadState=loaded\nActiveState=active\nSubState=waiting\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.timer\nUnitFileState=static\nInvocationID=5b45ce0df3cf44a3ad492da5658bcde9\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=aegis-auto-trace-rollback.timer\nLoadState=loaded\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/aegis-auto-trace-rollback.service\nUnitFileState=static\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S7-files-removed-before-reload",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    },
+    {
+     "label": "S8-not-found-after-reload",
+     "timer_stdout": "NextElapseUSecRealtime=\nNextElapseUSecMonotonic=infinity\nId=aegis-auto-trace-rollback.timer\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "service_stdout": "MainPID=0\nControlPID=0\nNFileDescriptorStore=0\nControlGroup=\nId=aegis-auto-trace-rollback.service\nTriggers=\nTriggeredBy=\nLoadState=not-found\nActiveState=inactive\nSubState=dead\nFragmentPath=\nUnitFileState=\nInvocationID=\n",
+     "list_jobs_stdout": ""
+    }
+   ]
+  }
+ ]
+}

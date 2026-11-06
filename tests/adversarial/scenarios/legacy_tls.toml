@@ -1,0 +1,4 @@
+name = "legacy_tls"
+transport = "legacy_tls"
+description = "Legacy TLS adversarial dry-run scenario"
+expected_threshold_key = "legacy_tls"

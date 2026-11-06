@@ -1,0 +1,351 @@
+--- a/src/proto/streams/recv.rs
++++ b/src/proto/streams/recv.rs
+@@ -494,0 +495,67 @@
++    // AEGIS PATCH (receive window): per-stream growth and shrink, which
++    // upstream h2 lacks (release_capacity refuses more than was received).
++    // See third_party/h2/AEGIS-PATCH.md, "Per-stream receive window".
++
++    /// What the stream's window re-opens to once every received byte is
++    /// released: the credit the peer is, or will be, told.
++    fn recv_window_target(stream: &store::Ptr) -> i64 {
++        isize::from(stream.recv_flow.available()) as i64 + i64::from(stream.in_flight_recv_data)
++    }
++
++    /// Grows one stream's receive window by `capacity` without releasing
++    /// connection capacity: the stream WINDOW_UPDATE is queued and the
++    /// connection task woken exactly as `release_capacity` does.
++    pub fn grow_window(
++        &mut self,
++        capacity: WindowSize,
++        stream: &mut store::Ptr,
++        task: &mut Option<Waker>,
++    ) -> Result<(), Reason> {
++        tracing::trace!("grow_window; size={}", capacity);
++
++        if !stream.is_recv || !stream.state.is_recv_streaming() {
++            return Err(Reason::STREAM_CLOSED);
++        }
++
++        // send_stream_window_updates announces the target and expects
++        // inc_window to succeed, so refuse here rather than panic there.
++        if Self::recv_window_target(stream) + i64::from(capacity) > i64::from(MAX_WINDOW_SIZE) {
++            return Err(Reason::FLOW_CONTROL_ERROR);
++        }
++
++        stream.recv_flow.assign_capacity(capacity)?;
++
++        if stream.recv_flow.unclaimed_capacity().is_some() {
++            // Queue the stream for sending the WINDOW_UPDATE frame.
++            self.pending_window_updates.push(stream);
++
++            if let Some(task) = task.take() {
++                task.wake();
++            }
++        }
++
++        Ok(())
++    }
++
++    /// Lowers what one stream's window re-opens to by `capacity`. Credit
++    /// already announced is not revoked and no frame is sent: releases
++    /// refill the difference before the next stream WINDOW_UPDATE, while
++    /// connection capacity is released as before.
++    pub fn shrink_window(
++        &mut self,
++        capacity: WindowSize,
++        stream: &mut store::Ptr,
++    ) -> Result<(), Reason> {
++        tracing::trace!("shrink_window; size={}", capacity);
++
++        if !stream.is_recv || !stream.state.is_recv_streaming() {
++            return Err(Reason::STREAM_CLOSED);
++        }
++
++        if i64::from(capacity) > Self::recv_window_target(stream) {
++            return Err(Reason::FLOW_CONTROL_ERROR);
++        }
++
++        stream.recv_flow.claim_capacity(capacity)
++    }
++
+@@ -1320,0 +1388,280 @@
++
++    // AEGIS PATCH (receive window): Recv::grow_window and shrink_window.
++
++    use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
++    use std::sync::Arc;
++
++    const AEGIS_WINDOW: WindowSize = 131_072;
++    const AEGIS_FRAME: usize = 16_384;
++
++    struct CountWakes(AtomicUsize);
++
++    impl std::task::Wake for CountWakes {
++        fn wake(self: Arc<Self>) {
++            self.0.fetch_add(1, AtomicOrdering::SeqCst);
++        }
++    }
++
++    fn aegis_recv() -> Recv {
++        let config = Config {
++            initial_max_send_streams: 0,
++            local_max_buffer_size: 0,
++            local_next_stream_id: 2.into(),
++            local_push_enabled: false,
++            extended_connect_protocol_enabled: false,
++            local_reset_duration: Duration::ZERO,
++            local_reset_max: 0,
++            remote_reset_max: 0,
++            remote_init_window_sz: DEFAULT_INITIAL_WINDOW_SIZE,
++            remote_max_initiated: None,
++            local_max_error_reset_streams: None,
++        };
++        Recv::new(peer::Dyn::Server, &config)
++    }
++
++    /// A stream the peer opened with a request, receiving body data.
++    fn aegis_open(store: &mut Store) -> store::Ptr<'_> {
++        let id = StreamId::from(1);
++        let mut stream = store.insert(id, Stream::new(id, 0, AEGIS_WINDOW));
++        let request = frame::Headers::new(
++            id,
++            frame::Pseudo::request(
++                http::Method::GET,
++                http::Uri::from_static("https://example.test/"),
++                None,
++            ),
++            HeaderMap::new(),
++        );
++        stream.state.recv_open(&request).unwrap();
++        stream
++    }
++
++    fn aegis_waker() -> (Arc<CountWakes>, Option<Waker>) {
++        let wakes = Arc::new(CountWakes(AtomicUsize::new(0)));
++        let task = Some(Waker::from(wakes.clone()));
++        (wakes, task)
++    }
++
++    /// Everything grow/shrink may touch, connection level included.
++    fn aegis_state(recv: &Recv, stream: &store::Ptr) -> [i64; 8] {
++        [
++            i64::from(stream.recv_flow.window_size()),
++            isize::from(stream.recv_flow.available()) as i64,
++            i64::from(stream.in_flight_recv_data),
++            i64::from(stream.is_pending_window_update),
++            i64::from(recv.flow.window_size()),
++            isize::from(recv.flow.available()) as i64,
++            i64::from(recv.in_flight_data),
++            recv.flow.unclaimed_capacity().map_or(-1, i64::from),
++        ]
++    }
++
++    /// What the connection task does for one queued stream, as in
++    /// send_stream_window_updates, which .expect()s inc_window.
++    fn aegis_announce(stream: &mut store::Ptr) -> Option<WindowSize> {
++        let incr = stream.recv_flow.unclaimed_capacity()?;
++        stream
++            .recv_flow
++            .inc_window(incr)
++            .expect("an announced window must stay within MAX_WINDOW_SIZE");
++        Some(incr)
++    }
++
++    /// One DATA frame through the real receive path, connection window
++    /// re-announced as the connection task would.
++    fn aegis_receive(recv: &mut Recv, stream: &mut store::Ptr, len: usize) {
++        recv.recv_data(
++            frame::Data::new(stream.id, Bytes::from(vec![0; len])),
++            stream,
++        )
++        .unwrap();
++        if let Some(incr) = recv.flow.unclaimed_capacity() {
++            recv.flow.inc_window(incr).unwrap();
++        }
++    }
++
++    #[test]
++    fn aegis_grow_window_grants_stream_credit_only_and_wakes_like_a_release() {
++        let mut recv = aegis_recv();
++        let mut store = Store::new();
++        let mut stream = aegis_open(&mut store);
++        let (wakes, mut task) = aegis_waker();
++        let before = aegis_state(&recv, &stream);
++
++        recv.grow_window(AEGIS_WINDOW, &mut stream, &mut task)
++            .unwrap();
++
++        let after = aegis_state(&recv, &stream);
++        // The stream's target doubled; nothing was announced yet.
++        assert_eq!(after[0], i64::from(AEGIS_WINDOW));
++        assert_eq!(after[1], 2 * i64::from(AEGIS_WINDOW));
++        assert_eq!(stream.recv_flow.unclaimed_capacity(), Some(AEGIS_WINDOW));
++        // Queued, and the connection task woken once, as a release would.
++        assert!(stream.is_pending_window_update);
++        assert_eq!(wakes.0.load(AtomicOrdering::SeqCst), 1);
++        assert!(task.is_none());
++        // No connection capacity was released or assigned.
++        assert_eq!(after[2..3], before[2..3]);
++        assert_eq!(after[4..], before[4..]);
++        assert_eq!(aegis_announce(&mut stream), Some(AEGIS_WINDOW));
++        assert_eq!(stream.recv_flow.window_size(), 2 * AEGIS_WINDOW);
++    }
++
++    #[test]
++    fn aegis_grow_window_queues_and_wakes_at_the_release_threshold_only() {
++        // release_capacity queues the stream and wakes the connection task
++        // once the unannounced credit reaches half the window the peer knows.
++        for (growth, at_once) in [
++            (1, false),
++            (1024, false),
++            (AEGIS_WINDOW / 2 - 1, false),
++            (AEGIS_WINDOW / 2, true),
++            (AEGIS_WINDOW, true),
++        ] {
++            let mut recv = aegis_recv();
++            let mut store = Store::new();
++            let mut stream = aegis_open(&mut store);
++            let (wakes, mut task) = aegis_waker();
++
++            recv.grow_window(growth, &mut stream, &mut task).unwrap();
++
++            assert_eq!(
++                isize::from(stream.recv_flow.available()) as i64,
++                i64::from(AEGIS_WINDOW + growth),
++                "growth {growth}"
++            );
++            assert_eq!(stream.is_pending_window_update, at_once, "growth {growth}");
++            assert_eq!(wakes.0.load(AtomicOrdering::SeqCst), usize::from(at_once));
++            assert_eq!(task.is_none(), at_once, "growth {growth}");
++        }
++    }
++
++    #[test]
++    fn aegis_grow_window_refuses_past_max_window_size_and_changes_nothing() {
++        let mut recv = aegis_recv();
++        let mut store = Store::new();
++        let mut stream = aegis_open(&mut store);
++        let (wakes, mut task) = aegis_waker();
++        // Received and not yet released: it re-opens the window later, so
++        // it counts against the limit now.
++        aegis_receive(&mut recv, &mut stream, AEGIS_FRAME);
++        let room = MAX_WINDOW_SIZE - AEGIS_WINDOW;
++        let before = aegis_state(&recv, &stream);
++
++        for refused in [room + 1, MAX_WINDOW_SIZE, WindowSize::MAX] {
++            assert_eq!(
++                recv.grow_window(refused, &mut stream, &mut task),
++                Err(Reason::FLOW_CONTROL_ERROR)
++            );
++            assert_eq!(aegis_state(&recv, &stream), before);
++            assert_eq!(wakes.0.load(AtomicOrdering::SeqCst), 0);
++            assert!(task.is_some());
++        }
++
++        // Exactly to the limit is accepted and announced without a panic.
++        recv.grow_window(room, &mut stream, &mut task).unwrap();
++        assert_eq!(aegis_announce(&mut stream), Some(room));
++        recv.release_capacity(AEGIS_FRAME as WindowSize, &mut stream, &mut None)
++            .unwrap();
++        assert_eq!(
++            Recv::recv_window_target(&stream),
++            i64::from(MAX_WINDOW_SIZE)
++        );
++        // Announce the rest even below h2's threshold: still within the limit.
++        let rest = isize::from(stream.recv_flow.available()) as i64
++            - i64::from(stream.recv_flow.window_size());
++        stream.recv_flow.inc_window(rest as WindowSize).unwrap();
++        assert_eq!(stream.recv_flow.window_size(), MAX_WINDOW_SIZE);
++        assert_eq!(
++            recv.grow_window(1, &mut stream, &mut None),
++            Err(Reason::FLOW_CONTROL_ERROR)
++        );
++    }
++
++    #[test]
++    fn aegis_grow_and_shrink_refuse_a_stream_that_no_longer_receives() {
++        let mut recv = aegis_recv();
++        let mut store = Store::new();
++        let mut stream = aegis_open(&mut store);
++        let mut last = frame::Data::new(stream.id, Bytes::from_static(b"end"));
++        last.set_end_stream(true);
++        recv.recv_data(last, &mut stream).unwrap();
++        let before = aegis_state(&recv, &stream);
++        let (wakes, mut task) = aegis_waker();
++
++        assert_eq!(
++            recv.grow_window(AEGIS_WINDOW, &mut stream, &mut task),
++            Err(Reason::STREAM_CLOSED)
++        );
++        assert_eq!(
++            recv.shrink_window(1, &mut stream),
++            Err(Reason::STREAM_CLOSED)
++        );
++        assert_eq!(aegis_state(&recv, &stream), before);
++        assert_eq!(wakes.0.load(AtomicOrdering::SeqCst), 0);
++
++        // A receiver that went away (RecvStream dropped) is refused too.
++        let mut store = Store::new();
++        let mut stream = aegis_open(&mut store);
++        stream.is_recv = false;
++        assert_eq!(
++            recv.grow_window(AEGIS_WINDOW, &mut stream, &mut task),
++            Err(Reason::STREAM_CLOSED)
++        );
++    }
++
++    #[test]
++    fn aegis_shrink_window_stops_re_granting_without_revoking_or_holding_the_connection() {
++        let mut recv = aegis_recv();
++        let mut store = Store::new();
++        let mut stream = aegis_open(&mut store);
++        recv.grow_window(AEGIS_WINDOW, &mut stream, &mut None)
++            .unwrap();
++        aegis_announce(&mut stream);
++        assert_eq!(stream.recv_flow.window_size(), 2 * AEGIS_WINDOW);
++
++        // At most the target can be taken back, and a refusal changes nothing.
++        let before = aegis_state(&recv, &stream);
++        assert_eq!(
++            recv.shrink_window(2 * AEGIS_WINDOW + 1, &mut stream),
++            Err(Reason::FLOW_CONTROL_ERROR)
++        );
++        assert_eq!(aegis_state(&recv, &stream), before);
++
++        recv.shrink_window(AEGIS_WINDOW, &mut stream).unwrap();
++        // Credit already announced stays; nothing is queued or sent.
++        assert_eq!(stream.recv_flow.window_size(), 2 * AEGIS_WINDOW);
++        assert_eq!(
++            isize::from(stream.recv_flow.available()) as i64,
++            i64::from(AEGIS_WINDOW)
++        );
++        assert_eq!(stream.recv_flow.unclaimed_capacity(), None);
++
++        // The peer spends its credit; every received byte is released at
++        // once. The stream is not re-granted above its lowered target, and
++        // the connection gets every byte back.
++        let mut received = 0;
++        while received < 3 * AEGIS_WINDOW as usize {
++            let peer_before = stream.recv_flow.window_size();
++            aegis_receive(&mut recv, &mut stream, AEGIS_FRAME);
++            recv.release_capacity(AEGIS_FRAME as WindowSize, &mut stream, &mut None)
++                .unwrap();
++            received += AEGIS_FRAME;
++            assert_eq!(recv.in_flight_data, 0);
++            assert_eq!(stream.in_flight_recv_data, 0);
++            if let Some(incr) = aegis_announce(&mut stream) {
++                assert!(peer_before as usize - AEGIS_FRAME < AEGIS_WINDOW as usize);
++                assert!(
++                    stream.recv_flow.window_size() <= AEGIS_WINDOW,
++                    "incr {incr}"
++                );
++            }
++            assert!(stream.recv_flow.window_size() <= 2 * AEGIS_WINDOW);
++        }
++        // Back at the target, re-opening exactly as an ungrown stream does.
++        assert_eq!(
++            isize::from(stream.recv_flow.available()) as i64,
++            i64::from(AEGIS_WINDOW)
++        );
++        assert!(stream.recv_flow.window_size() <= AEGIS_WINDOW);
++    }

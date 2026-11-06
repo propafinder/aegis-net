@@ -1,0 +1,22 @@
+--- a/src/protocol/frame/mod.rs
++++ b/src/protocol/frame/mod.rs
+@@ -197,7 +197,8 @@
+         let (header, length) = self.header.take().expect("Bug: no frame header");
+         debug_assert_eq!(payload.len() as u64, length);
+         let frame = Frame::from_payload(header, payload);
+-        trace!("received frame {}", frame);
++        // AEGIS: media/signaling payloads must not enter dependency logs.
++        trace!("received WebSocket frame");
+         Ok(Some(frame))
+     }
+ 
+@@ -216,7 +217,8 @@
+             return Err(Error::WriteBufferFull(Message::Frame(frame)));
+         }
+ 
+-        trace!("writing frame {}", frame);
++        // AEGIS: media/signaling payloads must not enter dependency logs.
++        trace!("writing WebSocket frame");
+ 
+         self.out_buffer.reserve(frame.len());
+         frame.format(&mut self.out_buffer).expect("Bug: can't write to vector");

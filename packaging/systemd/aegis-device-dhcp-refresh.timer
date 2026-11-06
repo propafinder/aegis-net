@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the AEGIS manager DHCP lease pin
+
+[Timer]
+OnBootSec=5s
+OnUnitActiveSec=5s
+AccuracySec=1s
+Unit=aegis-device-dhcp-refresh.service
+
+[Install]
+WantedBy=timers.target

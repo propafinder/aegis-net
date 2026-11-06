@@ -1,0 +1,4 @@
+name = "masque_derived"
+transport = "masque_derived"
+description = "MASQUE-derived adversarial dry-run scenario"
+expected_threshold_key = "masque_derived"

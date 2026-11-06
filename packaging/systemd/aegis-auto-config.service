@@ -1,0 +1,22 @@
+[Unit]
+Description=AEGIS AUTO fresh boot activation
+Requires=aegis-auto-guardian.service
+Wants=network-online.target
+After=local-fs.target network-online.target aegis-device-egress-guard.service aegis-auto-guardian.service
+ConditionPathExists=/var/lib/aegis-auto/control/v2-enabled
+ConditionPathExists=/var/lib/aegis-auto/control/generation.json
+
+[Service]
+Type=exec
+RemainAfterExit=yes
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_installer_auto_v2.py boot-current
+UMask=0077
+TimeoutStartSec=10s
+TimeoutStopSec=120s
+KillMode=control-group
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

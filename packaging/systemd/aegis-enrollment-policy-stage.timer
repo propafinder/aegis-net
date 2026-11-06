@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh the enrollment-owned policy and publish on success
+
+[Timer]
+OnActiveSec=2s
+OnUnitInactiveSec=120s
+AccuracySec=1s
+RandomizedDelaySec=5s
+Unit=aegis-enrollment-policy-stage.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rendered by install.sh on macOS during packaged or repo-based client
+  installation. The plist is designed to run as a LaunchAgent under the
+  installing user (not root) — AEGIS macOS wide ingress currently tops
+  out at phase-3 boundary-only, so system-wide root-level networking
+  privileges are not required for foreground/operator SOCKS mode. Headless
+  dedicated-user installs use packaging/launchd/dev.aegis.client.daemon.plist
+  via explicit launchdaemon service mode.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>dev.aegis.client</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__AEGIS_CLIENT_BIN__</string>
+        <string>--config</string>
+        <string>__AEGIS_CLIENT_CONFIG__</string>
+        <string>--runtime-events-jsonl</string>
+        <string>__AEGIS_CLIENT_RUNTIME_EVENTS_JSONL__</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>RUST_LOG</key>
+        <string>info</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>__AEGIS_CLIENT_STATE_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>2</integer>
+
+    <key>StandardOutPath</key>
+    <string>__AEGIS_CLIENT_LOG_DIR__/aegis-client.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__AEGIS_CLIENT_LOG_DIR__/aegis-client.err.log</string>
+</dict>
+</plist>

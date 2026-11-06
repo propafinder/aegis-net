@@ -1,0 +1,23 @@
+[package]
+name = "aegis-winctl"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+ring = "0.17"
+toml = { workspace = true }
+tempfile = "3"
+aegis-core = { version = "0.3.50", path = "../../../aegis-core" }
+
+[dev-dependencies]
+rcgen = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = ["Win32_System_SystemInformation", "Win32_System_WindowsProgramming", "Win32_UI_Shell"] }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Services", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Threading", "Win32_System_Memory"] }

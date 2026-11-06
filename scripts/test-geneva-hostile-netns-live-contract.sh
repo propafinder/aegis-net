@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT="${ROOT}/scripts/run-geneva-hostile-netns-live.sh"
+
+[[ -x "${SCRIPT}" ]]
+bash -n "${SCRIPT}"
+grep -Fq -- 'iptables -t mangle -A PREROUTING' "${SCRIPT}"
+grep -Fq -- '--string secret --algo kmp' "${SCRIPT}"
+grep -Fq -- 'CONNMARK --set-mark 2' "${SCRIPT}"
+grep -Fq -- 'CONNMARK --set-mark 1' "${SCRIPT}"
+grep -Fq -- 'tamper{IP:ttl:replace:1}(tamper{TCP:load:corrupt}())' "${SCRIPT}"
+grep -Fq -- 'baseline unexpectedly bypassed the controlled censor' "${SCRIPT}"
+grep -Fq -- 'except (TimeoutError, socket.timeout):' "${SCRIPT}"
+grep -Fq -- 'host_cleanup' "${SCRIPT}"
+grep -Fq -- 'host-netns-before.txt' "${SCRIPT}"
+grep -Fq -- 'host-netns-after.txt' "${SCRIPT}"
+grep -Fq -- 'client-binary.sha256' "${SCRIPT}"
+grep -Fq -- 'sha256sums.txt' "${SCRIPT}"
+grep -Fq -- 'host-routes-before.canonical.txt' "${SCRIPT}"
+grep -Fq -- 'host-iptables-before.canonical.txt' "${SCRIPT}"
+grep -Fq -- 'set -e' "${SCRIPT}"
+grep -Fq -- 'client-facing.pcap' "${SCRIPT}"
+grep -Fq -- 'server-facing.pcap' "${SCRIPT}"
+grep -Fq -- 'server_facing_ttl1_packets' "${SCRIPT}"
+grep -Fq -- 'ambiguous_post_send' "${SCRIPT}"
+grep -Fq -- 'hybrid_flow_blocked_fail_closed' "${SCRIPT}"
+grep -Fq -- 'relay_replay_safe' "${SCRIPT}"
+grep -Fq -- '"relay_session_started" not in ambiguous_codes' "${SCRIPT}"
+grep -Fq -- '"direct_relay_handoff_started" not in ambiguous_codes' "${SCRIPT}"
+grep -Fq -- 'not an external commercial or national DPI' "${SCRIPT}"
+grep -Fq -- 'ip netns del "${client_ns}"' "${SCRIPT}"
+grep -Fq -- 'ip netns del "${gateway_ns}"' "${SCRIPT}"
+grep -Fq -- 'ip netns del "${transit_ns}"' "${SCRIPT}"
+grep -Fq -- 'ip netns del "${server_ns}"' "${SCRIPT}"
+
+echo "PASS: Geneva controlled hostile-netns live contract"

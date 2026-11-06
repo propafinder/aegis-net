@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh the AEGIS manager DHCP server destination pin
+Requires=aegis-device-egress-guard.service
+After=aegis-device-egress-guard.service systemd-networkd.service NetworkManager.service
+
+[Service]
+Type=oneshot
+Environment=AEGIS_DEVICE_GUARD_STATE=/var/lib/aegis-install/client/device-guard.conf
+TimeoutStartSec=210s
+ExecStart=/bin/bash /usr/local/lib/aegis/helpers/aegis-device-egress-guard.sh refresh-manager-lease-service

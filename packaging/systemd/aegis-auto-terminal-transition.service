@@ -1,0 +1,13 @@
+[Unit]
+Description=AEGIS AUTO authenticated old boot stop transition
+Requires=aegis-device-egress-guard.service aegis-auto-guardian-watchdog.service
+After=aegis-device-egress-guard.service aegis-auto-guardian-watchdog.service
+Before=aegis-auto-guardian.service network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_boot_transition.py boot-transition
+RemainAfterExit=yes
+TimeoutStartSec=120s
+UMask=0077
+NoNewPrivileges=yes

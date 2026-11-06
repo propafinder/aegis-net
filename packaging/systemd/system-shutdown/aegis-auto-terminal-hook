@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_terminal_witness.py late "$1"

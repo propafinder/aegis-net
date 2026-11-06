@@ -1,0 +1,71 @@
+# Chrome stable mimicry profile. Code reads this file; do not duplicate these
+# lists in Rust. Refresh with scripts/refresh-chrome-profile.py.
+schema = 1
+measured_chrome = "157"
+measured_on = "2026-11-06"
+
+[user_agent]
+major = 157
+windows = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+macos = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+linux = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+
+[tls]
+grease = true
+permute_extensions = true
+ech_grease = true
+ocsp_stapling = true
+signed_cert_timestamps = true
+alps_new_codepoint = true
+tls13_ciphers = ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"]
+tls12_ciphers = ["ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384", "ECDHE-RSA-AES256-GCM-SHA384", "ECDHE-ECDSA-CHACHA20-POLY1305", "ECDHE-RSA-CHACHA20-POLY1305", "ECDHE-RSA-AES128-SHA", "ECDHE-RSA-AES256-SHA", "AES128-GCM-SHA256", "AES256-GCM-SHA384", "AES128-SHA", "AES256-SHA"]
+groups = ["X25519MLKEM768", "X25519", "P-256", "P-384"]
+signature_algorithms = ["0x0904", "0x0905", "0x0906", "0x0403", "0x0804", "0x0401", "0x0503", "0x0805", "0x0501", "0x0806", "0x0601"]
+cert_compression = ["brotli"]
+alpn_http11 = ["http/1.1"]
+alpn_h2 = ["h2"]
+alpn_h2_http11 = ["h2", "http/1.1"]
+
+[quic]
+grease = false
+permute_extensions = true
+ech_grease = true
+ocsp_stapling = false
+signed_cert_timestamps = false
+alps_new_codepoint = true
+tls13_ciphers = ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"]
+groups = ["X25519MLKEM768", "X25519", "P-256", "P-384"]
+signature_algorithms = ["0x0403", "0x0804", "0x0401", "0x0503", "0x0805", "0x0501", "0x0806", "0x0601", "0x0201"]
+cert_compression = ["brotli"]
+alpn = ["h3"]
+
+[quic.transport]
+# quinn keeps supplying the parameter block until a reviewed capture sets apply.
+apply = false
+
+[http2]
+connection_window_increment = 15663105
+pseudo_header_order = [":method", ":authority", ":scheme", ":path"]
+header_order = ["content-type", "te", "user-agent", "accept", "accept-language", "cache-control", "origin", "sec-websocket-version", "grpc-accept-encoding", "grpc-encoding", "grpc-timeout", "grpc-message-type", "alt-used"]
+
+[http2.headers_priority]
+# Weight octet on the wire. Chrome's net log prints this value plus one (110).
+exclusive = true
+dependency = 0
+weight = 109
+
+[[http2.settings]]
+id = 1
+value = 65536
+
+[[http2.settings]]
+id = 2
+value = 0
+
+[[http2.settings]]
+id = 4
+value = 6291456
+
+[[http2.settings]]
+id = 6
+value = 262144

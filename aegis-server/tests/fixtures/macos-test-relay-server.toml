@@ -1,0 +1,18 @@
+listen = "198.51.100.247:443"
+cert = "/opt/aegis-macos-test-20261021/server.pem"
+key = "/opt/aegis-macos-test-20261021/server-key.pem"
+fallback = "close"
+[transport]
+h2_max_concurrent_streams = 128
+device_policy_status_socket = "/run/aegis-macos-test-policy/status.sock"
+quic_required = false
+[transport.inner_tls]
+cert = "/opt/aegis-macos-test-20261021/server.pem"
+key = "/opt/aegis-macos-test-20261021/server-key.pem"
+client_ca = "/opt/aegis-macos-test-20261021/ca.pem"
+device_registry = "/opt/aegis-macos-test-20261021/registry.json"
+[transport.inner_tls.admission]
+max_handshakes = 128
+max_sessions = 4096
+max_handshakes_per_peer = 16
+max_sessions_per_peer = 1024

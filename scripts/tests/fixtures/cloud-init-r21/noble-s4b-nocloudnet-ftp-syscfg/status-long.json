@@ -1,0 +1,43 @@
+{
+  "boot_status_code": "enabled-by-sysvinit",
+  "datasource": "nocloudnet",
+  "detail": "DataSourceNoCloudNet [seed=ds_config_seedfrom,ftp://seed.invalid:2121/]",
+  "errors": [],
+  "extended_status": "degraded running",
+  "init": {
+    "errors": [],
+    "finished": 116227.55,
+    "recoverable_errors": {
+      "WARNING": [
+        "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+      ]
+    },
+    "start": 116227.02
+  },
+  "init-local": {
+    "errors": [],
+    "finished": 116226.9,
+    "recoverable_errors": {},
+    "start": 116226.89
+  },
+  "last_update": "Fri, 02 Jan 1970 08:17:07 +0000",
+  "modules-config": {
+    "errors": [],
+    "finished": null,
+    "recoverable_errors": {},
+    "start": null
+  },
+  "modules-final": {
+    "errors": [],
+    "finished": null,
+    "recoverable_errors": {},
+    "start": null
+  },
+  "recoverable_errors": {
+    "WARNING": [
+      "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+    ]
+  },
+  "stage": null,
+  "status": "running"
+}

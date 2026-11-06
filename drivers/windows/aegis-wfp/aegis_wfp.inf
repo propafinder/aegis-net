@@ -1,0 +1,44 @@
+; AEGIS WFP proof callout driver INF.
+
+[Version]
+Signature="$Windows NT$"
+Class=WFPCALLOUTS
+ClassGuid={57465043-616C-6C6F-7574-5F636C617373}
+Provider=%ProviderName%
+CatalogFile=aegis_wfp.cat
+DriverVer=05/01/2026,19.30.00.000
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir=12
+AegisWfp.CopyFiles=12
+
+[DefaultInstall.NTamd64]
+CopyFiles=AegisWfp.CopyFiles
+
+[DefaultInstall.NTamd64.Services]
+AddService=AegisWfp,0x00000002,AegisWfp.Service
+
+[DefaultUninstall.NTamd64]
+DelFiles=AegisWfp.CopyFiles
+
+[DefaultUninstall.NTamd64.Services]
+DelService=AegisWfp,0x00000200
+
+[AegisWfp.CopyFiles]
+aegis_wfp.sys
+
+[AegisWfp.Service]
+DisplayName=%ServiceName%
+Description=%ServiceDescription%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\aegis_wfp.sys
+LoadOrderGroup=NDIS
+Dependencies=TCPIP
+
+[Strings]
+ProviderName="AEGIS"
+ServiceName="AegisWfp"
+ServiceDescription="AEGIS minimal WFP ALE connect redirect proof callout"

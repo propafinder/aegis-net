@@ -1,0 +1,5 @@
+/usr/lib/systemd/system-generators/cloud-init-generator normal=/tmp/gen/n early=/tmp/gen/e late=/tmp/gen/l
+checking for datasource
+ds-identify rc=2
+cloud-init is disabled by kernel command line or etc_file
+already disabled: no change needed [no /tmp/gen/e/multi-user.target.wants/cloud-init.target]

@@ -1,0 +1,106 @@
+[package]
+name = "aegis-client"
+version = "0.3.50"
+edition.workspace = true
+license.workspace = true
+description = "AEGIS local node: SOCKS5, Direct and Relay modes"
+
+[[bin]]
+name = "aegis-client"
+path = "src/main.rs"
+
+[dependencies]
+aegis-core = { version = "0.3.50", path = "../aegis-core", features = ["device-enrollment"] }
+aegis-chrome-profile = { version = "0.3.50", path = "../aegis-chrome-profile" }
+aegis-web-carrier = { version = "0.1.0", path = "../aegis-web-carrier" }
+aegis-webrtc = { version = "0.1.0", path = "../aegis-webrtc", optional = true }
+async-trait.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+toml_edit = "=0.22.27"
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap.workspace = true
+thiserror.workspace = true
+futures.workspace = true
+rustls.workspace = true
+tokio-rustls.workspace = true
+tokio-tungstenite.workspace = true
+bytes.workspace = true
+http.workspace = true
+hex.workspace = true
+h2.workspace = true
+quinn.workspace = true
+rand.workspace = true
+rustls-native-certs.workspace = true
+anyhow = "1.0"
+base64 = "0.22.1"
+dirs = "5.0"
+libc = "0.2"
+tempfile = "3"
+socket2 = "0.6"
+sha2.workspace = true
+zeroize.workspace = true
+h3 = "0.0.8"
+h3-quinn = { version = "0.0.10", features = ["datagram"] }
+h3-datagram = "0.0.2"
+aws-lc-sys = { workspace = true, optional = true }
+aegis-quic-boring = { version = "0.3.50", path = "../aegis-quic-boring", features = ["boring"], optional = true }
+brotli = { version = "8", optional = true }
+
+# Full executable admission remains byte-for-byte SHA-256. On Linux ARM,
+# sha2's upstream backend selects hardware SHA-2 at runtime and retains its
+# software fallback for CPUs without that feature.
+[target.'cfg(all(target_os = "linux", target_arch = "aarch64"))'.dependencies]
+sha2 = { workspace = true, features = ["asm-aarch64"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Globalization", "Win32_Networking_WinSock", "Win32_System_Services", "Win32_Storage_FileSystem"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "macos", windows))'.dependencies]
+# Userspace TCP/IP for Linux TUN and Windows Wintun; IP medium, dual-stack TCP/UDP.
+smoltcp = { version = "0.12", default-features = false, features = [
+    "std",
+    "medium-ip",
+    "proto-ipv4",
+    "proto-ipv6",
+    "socket-tcp",
+    "socket-udp",
+] }
+
+[features]
+default = []
+# Explicit raw legacy freshness mode; both peers must use this feature.
+legacy-challenge-v1 = ["aegis-core/legacy-challenge-v1", "aegis-server/legacy-challenge-v1"]
+webrtc-carrier = ["dep:aegis-webrtc"]
+# Explicit native VP8 media only; default packages never enable SFU.
+sfu-media-vp8 = ["webrtc-carrier", "aegis-webrtc/sfu-media-vp8"]
+# Explicit opt-in for a disruptive current-host acceptance test, never in kits.
+windows-host-acceptance = []
+lua = ["aegis-core/lua"]
+raw-socket = ["aegis-core/raw-socket"]
+chrome-like-tls = ["dep:aws-lc-sys", "dep:brotli", "dep:aegis-quic-boring"]
+# Chrome-fingerprint QUIC (MASQUE) via aegis-quic-boring; without it MASQUE
+# keeps the rustls ClientHello.
+chrome-like-quic = ["dep:aegis-quic-boring"]
+
+# Forensic-safe / at-risk-host build: `--cfg forensic_safe` disables stream
+# initialization in runtime_event_stream::init, leaving global emission a no-op.
+# It does not remove all sink code from the binary or prevent other disk trails.
+# It is a build PROFILE, deliberately NOT a Cargo feature —
+# `--all-features` must not silently remove the sink and break the sink's own
+# tests. Build it explicitly:
+#     RUSTFLAGS="--cfg forensic_safe" cargo build --release -p aegis-client
+# The --no-runtime-events flag / AEGIS_FORENSIC_SAFE=1 remain the runtime
+# opt-outs; the cfg disables this initialization path at build time. It does
+# not erase earlier event files, OS logs, or other application state. Declared
+# below so -D warnings does not flag it as an unexpected cfg.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(forensic_safe)'] }
+
+[dev-dependencies]
+aegis-server = { version = "0.3.50", path = "../aegis-server" }
+rcgen.workspace = true
+tokio = { workspace = true, features = ["test-util"] }

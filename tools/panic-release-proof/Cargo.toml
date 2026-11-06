@@ -1,0 +1,10 @@
+[package]
+name = "aegis-panic-release-proof"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "aegis-panic-release-proof"
+path = "src/main.rs"

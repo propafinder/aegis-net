@@ -1,0 +1,87 @@
+[workspace]
+resolver = "2"
+members = [
+    "aegis-core",
+    "aegis-chrome-profile",
+    "aegis-client",
+    "aegis-server",
+    "aegis-quic-boring",
+    "aegis-geneva",
+    "aegis-fingerprint",
+    "aegis-knowledge",
+    "aegis-android-jni",
+    "aegis-webrtc",
+    "aegis-web-carrier",
+    "tools/measure",
+    "tools/transport-lab",
+    "tools/witness",
+    "tools/panic-release-proof",
+    "tools/macos-utun-lab",
+    "tools/windows/aegis-winctl",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+tempfile = "3"
+tokio = { version = "1.53.3", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "sync", "fs", "signal"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror = "1.0"
+async-trait = "0.1"
+clap = { version = "4.5", features = ["derive"] }
+rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "ring", "std", "tls12"] }
+tokio-rustls = "0.26"
+tokio-tungstenite = "0.24"
+webpki-roots = "0.26"
+rustls-native-certs = "0.8"
+sha2 = "0.10"
+md5 = "0.7"
+rand = "0.8"
+hex = "0.4"
+bytes = "1.7"
+http = "1.1"
+h2 = "0.4"
+quinn = { version = "0.11", default-features = false, features = ["runtime-tokio", "rustls-ring"] }
+chacha20poly1305 = { version = "0.10", features = ["std"] }
+hkdf = "0.12"
+zeroize = { version = "1.7", features = ["zeroize_derive"] }
+dirs = "5.0"
+futures = "0.3"
+rcgen = "0.13"
+aws-lc-sys = { version = "0.44.0", features = ["ssl"] }
+
+# Executable admission hashes complete installed binaries during bounded owner
+# handoffs. Keep SHA-256 usable in dev/test while retaining all caller checks.
+[profile.dev.package."sha2:0.10.9"]
+opt-level = 3
+
+# Active-owner admission reads and hashes the complete client ELF, including
+# nonloaded symbol tables. Match the release symbol policy for this package
+# without changing test optimization, assertions, or any integrity readback.
+[profile.dev.package.aegis-client]
+strip = "symbols"
+
+[profile.release]
+strip = "symbols"
+lto = "thin"
+codegen-units = 1
+# TUN and relay workers rely on catch_unwind plus guard Drop for fail-closed
+# cleanup. The release fault proof in CI exercises this exact workspace policy.
+panic = "unwind"
+
+# AEGIS vendors h2 for one reason: the pseudo-header emission order. Chrome
+# sends :method/:authority/:scheme/:path and upstream h2 sends
+# :method/:scheme/:authority/:path, which distinguishes every request we make
+# from a browser's on the first HEADERS frame. The order is hardcoded in
+# frame::headers::Iter with no builder option, so the only way to control it is
+# to own the source. See third_party/h2/AEGIS-PATCH.md for the exact delta and
+# how to re-apply it when bumping the upstream version.
+[patch.crates-io]
+h2 = { version = "0.4.16", path = "third_party/h2" }
+tungstenite = { version = "0.24.0", path = "third_party/tungstenite" }

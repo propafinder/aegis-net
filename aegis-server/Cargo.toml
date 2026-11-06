@@ -1,0 +1,70 @@
+[package]
+name = "aegis-server"
+default-run = "aegis-server"
+version = "0.3.50"
+edition.workspace = true
+license.workspace = true
+description = "AEGIS relay: TLS tunnel and anti-probing hooks"
+
+[lib]
+name = "aegis_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aegis-server"
+path = "src/main.rs"
+
+[[bin]]
+name = "aegis-bundle-token-status"
+path = "src/bin/aegis-bundle-token-status.rs"
+
+[dependencies]
+aegis-core = { version = "0.3.50", path = "../aegis-core", features = ["device-enrollment"] }
+aegis-web-carrier = { version = "0.1.0", path = "../aegis-web-carrier" }
+tokio-postgres = "0.7"
+zeroize.workspace = true
+aegis-webrtc = { version = "0.1.0", path = "../aegis-webrtc", optional = true }
+tokio = { workspace = true, features = ["process"] }
+serde = { workspace = true, features = ["derive"] }
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap.workspace = true
+anyhow = "1.0"
+libc = "0.2"
+thiserror.workspace = true
+sha2.workspace = true
+hmac = "0.12.1"
+base64 = "0.22.1"
+httparse = "1.10.1"
+hex.workspace = true
+rand.workspace = true
+serde_json.workspace = true
+rustls.workspace = true
+tokio-rustls.workspace = true
+tokio-tungstenite.workspace = true
+prost = "=0.14.4"
+bytes.workspace = true
+http.workspace = true
+h2.workspace = true
+quinn.workspace = true
+futures.workspace = true
+tempfile = "3"
+url = "=2.5.8"
+h3 = "0.0.8"
+h3-quinn = { version = "0.0.10", features = ["datagram"] }
+h3-datagram = "0.0.2"
+
+[features]
+default = []
+# Explicit raw legacy freshness mode; both peers must use this feature.
+legacy-challenge-v1 = ["aegis-core/legacy-challenge-v1"]
+webrtc-carrier = ["dep:aegis-webrtc"]
+# Native VP8 is opt-in and not part of a default package or installed route.
+sfu-media-vp8 = ["webrtc-carrier", "aegis-webrtc/sfu-media-vp8"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["process", "test-util"] }
+rcgen.workspace = true
+tempfile = "3"
+log = "0.4"

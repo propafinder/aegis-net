@@ -1,0 +1,64 @@
+{
+ "base64_encoded_keys": [],
+ "ds": {
+  "_doc": "EXPERIMENTAL: The structure and format of content scoped under the 'ds' key may change in subsequent releases of cloud-init.",
+  "meta_data": {
+   "dsmode": "net",
+   "instance-id": "probe-s4b-nocloudnet-ftp-syscfg",
+   "local-hostname": "probe-net",
+   "seedfrom": "ftp://seed.invalid:2121/"
+  }
+ },
+ "merged_cfg": "redacted for non-root user",
+ "merged_system_cfg": "redacted for non-root user",
+ "sensitive_keys": [
+  "merged_cfg",
+  "merged_system_cfg"
+ ],
+ "sys_info": {
+  "dist": [
+   "ubuntu",
+   "26.04",
+   "resolute"
+  ],
+  "platform": "Linux-6.8.0-117-generic-aarch64-with-glibc2.43",
+  "python": "3.14.4",
+  "release": "6.8.0-117-generic",
+  "system": "Linux",
+  "uname": [
+   "Linux",
+   "probe-net",
+   "6.8.0-117-generic",
+   "#117-Ubuntu SMP PREEMPT_DYNAMIC Thu May  7 17:26:37 UTC 2026",
+   "aarch64",
+   ""
+  ],
+  "variant": "ubuntu"
+ },
+ "v1": {
+  "_beta_keys": [
+   "subplatform"
+  ],
+  "availability-zone": null,
+  "availability_zone": null,
+  "cloud-name": "unknown",
+  "cloud_id": "nocloud",
+  "cloud_name": "unknown",
+  "distro": "ubuntu",
+  "distro_release": "resolute",
+  "distro_version": "26.04",
+  "instance-id": "probe-s4b-nocloudnet-ftp-syscfg",
+  "instance_id": "probe-s4b-nocloudnet-ftp-syscfg",
+  "kernel_release": "6.8.0-117-generic",
+  "local-hostname": "probe-net",
+  "local_hostname": "probe-net",
+  "machine": "aarch64",
+  "platform": "nocloud",
+  "public_ssh_keys": [],
+  "python_version": "3.14.4",
+  "region": null,
+  "subplatform": "seed-dir (ds_config_seedfrom,ftp://seed.invalid:2121/)",
+  "system_platform": "Linux-6.8.0-117-generic-aarch64-with-glibc2.43",
+  "variant": "ubuntu"
+ }
+}

@@ -1,0 +1,20 @@
+[Unit]
+Description=Aegis AUTO fixed trace table emergency cleanup
+After=local-fs.target
+ConditionPathExists=/usr/local/lib/aegis/helpers/lib/aegis_auto_trace_rollback.py
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_trace_rollback.py cleanup
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+RestrictAddressFamilies=AF_NETLINK
+TimeoutStartSec=6s
+

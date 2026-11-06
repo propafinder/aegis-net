@@ -1,0 +1,14 @@
+[Unit]
+Description=Pull current private Aegis policy without renewing replica validity
+
+[Timer]
+# Run after every timer activation, including activation long after boot.
+# Count from completion so a slow pull cannot consume its next deadline.
+OnActiveSec=2s
+OnUnitInactiveSec=60s
+AccuracySec=1s
+RandomizedDelaySec=5s
+Unit=aegis-device-policy-sync.service
+
+[Install]
+WantedBy=timers.target

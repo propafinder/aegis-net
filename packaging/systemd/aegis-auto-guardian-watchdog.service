@@ -1,0 +1,31 @@
+[Unit]
+Description=Aegis AUTO independent guardian death watchdog
+After=local-fs.target aegis-device-egress-guard.service
+Before=aegis-auto-guardian.service
+ConditionPathExists=/usr/local/lib/aegis/helpers/lib/aegis_auto_guardian_watchdog.py
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_guardian_watchdog.py serve
+RuntimeDirectory=aegis-auto-guardian-watchdog
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+UMask=0077
+WatchdogSec=30s
+TimeoutStartSec=25s
+TimeoutStopSec=75s
+Restart=on-failure
+RestartSec=1s
+FileDescriptorStoreMax=2
+FileDescriptorStorePreserve=yes
+KillMode=control-group
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_SYS_ADMIN CAP_SYS_PTRACE
+AmbientCapabilities=CAP_NET_ADMIN CAP_SYS_ADMIN CAP_SYS_PTRACE
+Delegate=yes
+

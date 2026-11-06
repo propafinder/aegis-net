@@ -1,0 +1,2 @@
+-- Пример сценария для сборки с --features lua (интеграция с Brain — по мере развития API).
+-- return { name = "custom", weight = 1.0 }

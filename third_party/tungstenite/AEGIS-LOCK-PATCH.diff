@@ -1,0 +1,23 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -789 +789 @@
+-version = "0.23.8"
++version = "0.23.46"
+@@ -791 +791 @@
+-checksum = "79adb16721f56eb2d843e67676896a61ce7a0fa622dc18d3e372477a029d2740"
++checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
+@@ -825 +825 @@
+-version = "1.7.0"
++version = "1.15.1"
+@@ -827 +827,4 @@
+-checksum = "976295e77ce332211c0d24d92c0e83e50f5c5f046d11082cea19f3df13a3562d"
++checksum = "2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96"
++dependencies = [
++ "zeroize",
++]
+@@ -831 +834 @@
+-version = "0.102.4"
++version = "0.103.16"
+@@ -833 +836 @@
+-checksum = "ff448f7e92e913c4b7d4c6d8e4540a1724b319b4152b8aef6d4cf8339712b33e"
++checksum = "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281"

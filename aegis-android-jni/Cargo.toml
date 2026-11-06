@@ -1,0 +1,12 @@
+[package]
+name = "aegis-android-jni"
+version = "0.3.12"
+edition.workspace = true
+license.workspace = true
+description = "AEGIS Android JNI proof-of-concept surface"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde_json.workspace = true

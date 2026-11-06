@@ -1,0 +1,50 @@
+{
+  "schema": "aegis_windows_build_tool_wheels_v1",
+  "platform": "win_amd64",
+  "implementation": "cpython",
+  "minimum_python": "3.8",
+  "dependency_closure": "CMake requires importlib_metadata only below Python3.8; those interpreters are refused instead of downloading unlisted dependencies.",
+  "rows": [
+    {
+      "package": "cmake",
+      "version": "3.31.6",
+      "metadata_url": "https://pypi.org/pypi/cmake/3.31.6/json",
+      "metadata_sha256": "423547767771ae29084e326655fe16cae3c3b4ccdaa68151482174e7d1d32e3d",
+      "requires_python": ">=3.7",
+      "requires_dist": [
+        "importlib_metadata>=1.4; python_version < \"3.8\""
+      ],
+      "filename": "cmake-3.31.6-py3-none-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/18/58/909d6d99acb4e0886d0f660cf4e0fb26f586590e370b2e4ce7a10d06b145/cmake-3.31.6-py3-none-win_amd64.whl",
+      "sha256": "bbaed969cef3c427f4f17591feb28db4ae595e3a4bbd45cb35522cee14df6a32",
+      "size": 36396448,
+      "upload_time": "2025-02-28T00:16:05.702615Z"
+    },
+    {
+      "package": "ninja",
+      "version": "1.11.1.4",
+      "metadata_url": "https://pypi.org/pypi/ninja/1.11.1.4/json",
+      "metadata_sha256": "5d2a5a874a263e672318d3f6f7563c32da74b3e6b4148bf1e86550f4be652957",
+      "requires_python": ">=3.7",
+      "requires_dist": null,
+      "filename": "ninja-1.11.1.4-py3-none-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/5b/10/9b8fe9ac004847490cc7b54896124c01ce2d87d95dc60aabd0b8591addff/ninja-1.11.1.4-py3-none-win_amd64.whl",
+      "sha256": "4617b3c12ff64b611a7d93fd9e378275512bb36eff8babff7c83f5116b4f8d66",
+      "size": 296461,
+      "upload_time": "2025-03-22T06:46:40.532706Z"
+    },
+    {
+      "package": "libclang",
+      "version": "18.1.1",
+      "metadata_url": "https://pypi.org/pypi/libclang/18.1.1/json",
+      "metadata_sha256": "0e3d42c2c83d87f90b9586dd8a59d8770cfde05709598c6954d84b2b17616fa2",
+      "requires_python": "",
+      "requires_dist": null,
+      "filename": "libclang-18.1.1-py2.py3-none-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/0b/2d/3f480b1e1d31eb3d6de5e3ef641954e5c67430d5ac93b7fa7e07589576c7/libclang-18.1.1-py2.py3-none-win_amd64.whl",
+      "sha256": "4dd2d3b82fab35e2bf9ca717d7b63ac990a3519c7e312f19fa8e86dcc712f7fb",
+      "size": 26415083,
+      "upload_time": "2024-03-17T16:42:21.703571Z"
+    }
+  ]
+}

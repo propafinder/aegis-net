@@ -1,0 +1,31 @@
+# Rebuild the external calibration summary from fresh measurements and apply it.
+#
+# Shipped DISABLED on purpose. Read this before enabling.
+#
+# The summary is only as good as the corpus behind it, and the corpus comes
+# from a witness matrix run — which applies netem (added delay, loss, rate
+# caps) to the live egress interface for several minutes. On a host that is
+# carrying real user traffic that is a visible outage, not a background job.
+# Enabling it is an operational decision about a specific host, so it is left
+# to the operator rather than switched on by an installer.
+#
+# The alternative to enabling this is not "stale calibration": the summary
+# carries a freshness half-life and decays, so an old one loses influence
+# instead of quietly staying authoritative. This timer exists to keep it fresh
+# where a host can afford the measurement, not to prevent silent staleness.
+#
+#   systemctl enable --now aegis-calibration-refresh.timer
+#
+[Unit]
+Description=AEGIS external calibration refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=AEGIS_CALIBRATION_DIR=__AEGIS_CLIENT_STATE_DIR__/calibration
+Environment=AEGIS_CLIENT_CONFIG=__AEGIS_CLIENT_CONFIG__
+ExecStart=/usr/local/bin/aegis-calibration-refresh.sh
+# Measurement is slow; a stuck run must not hold the timer forever.
+TimeoutStartSec=1800
+Nice=10

@@ -1,0 +1,1094 @@
+# Public CI: GitHub-hosted build, Clippy, fmt, tests and dependency audit.
+# Generated from the private workflow by make_public_ci.py; no secrets,
+# no artifact uploads, no signing, release or deploy steps, read-only token.
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request: null
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  dependency-security:
+    name: Format, repository hygiene and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Reject tracked agent instructions and editor settings
+        run: |
+          set -euo pipefail
+          tracked="$(git ls-files -- 'AGENTS.md' '**/AGENTS.md' 'CLAUDE.md' '.cursor/' '.claude/' '.codex/' '.agents/')"
+          if [[ -n "$tracked" ]]; then
+            printf '%s\n' "$tracked"
+            echo '::error::Agent instructions and editor settings must stay outside the repository.'
+            exit 1
+          fi
+      - name: Vendored source integrity contract
+        if: ${{ !cancelled() }}
+        run: bash ./scripts/test-vendored-integrity-contract.sh
+      - name: Legacy TUN guard lifecycle source contract
+        if: ${{ !cancelled() }}
+        run: bash ./scripts/test-legacy-tun-guard-lifecycle-contract.sh
+      - name: Installer Python import isolation contract
+        if: ${{ !cancelled() }}
+        run: bash ./scripts/test-installer-python-isolation-contract.sh
+      - name: Self-hosted carrier manifest source contract
+        if: ${{ !cancelled() }}
+        run: python3 -I -B -m unittest discover -s scripts/deploy -p 'test_render_k8s_carrier.py'
+      - name: Isolated relay canary render source contract
+        if: ${{ !cancelled() }}
+        run: python3 -I -B -m unittest discover -s scripts/security -p 'test_render_isolated_relay_canary.py'
+      - name: B-07 startup collector source contract
+        if: ${{ !cancelled() }}
+        run: python3 -I -B scripts/test-collect-optimizer-startup.py
+      - name: B-07 inert startup runner process contract
+        if: ${{ !cancelled() }}
+        run: python3 -I -B scripts/test-measure-optimizer-startup-series.py
+      - name: B-11 inert soak route observer contract
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        run: timeout 30s bash ./scripts/test-soak-route-observer-contract.sh
+      - name: Windows ARM64 Clang input identity contract
+        if: ${{ !cancelled() }}
+        run: python3 -I scripts/windows/test-prepare-arm64-clang-neon.py
+      - name: Install Rust 1.97.1
+        if: ${{ !cancelled() }}
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Format check (NetworkExtension crate)
+        run: cargo fmt --manifest-path tools/macos/aegis-network-extension/Cargo.toml -- --check
+      - name: Dependency audit policy contract
+        if: ${{ !cancelled() }}
+        run: bash scripts/test-cargo-audit-policy-contract.sh
+      - name: Install dependency auditor
+        if: ${{ !cancelled() }}
+        run: cargo install cargo-audit --version 0.22.2 --locked
+      - name: Dependency vulnerability audit
+        if: ${{ !cancelled() }}
+        run: bash scripts/security/audit-dependencies.sh
+      - name: Vendored dependency audit
+        if: ${{ !cancelled() }}
+        run: bash ./scripts/audit-vendored-dependencies.sh
+      - name: Install dependency policy tool
+        if: ${{ !cancelled() }}
+        run: cargo install cargo-deny --version '=0.20.2' --locked
+      - name: Populate locked dependency metadata
+        if: ${{ !cancelled() }}
+        run: |
+          cargo fetch --locked
+          cargo fetch --locked --manifest-path tools/macos/aegis-network-extension/Cargo.toml
+      - name: Enforce dependency license, origin and vulnerability policy
+        if: ${{ !cancelled() }}
+        run: bash scripts/security/check-supply-chain.sh
+      - name: Check upstream notice confinement
+        if: ${{ !cancelled() }}
+        run: python3 -I -B scripts/test-third-party-notice-source-custody.py
+      - name: Chrome profile refresh safety contract
+        if: ${{ !cancelled() }}
+        run: bash ./scripts/test-chrome-profile-refresh-safety-contract.sh
+  rust:
+    name: Linux x86_64 build, Clippy and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 127.0.0.1:5432:5432
+        options: --health-cmd "pg_isready -U postgres -d postgres" --health-interval 5s --health-timeout 3s --health-retries 12
+    env:
+      AEGIS_TEST_POSTGRES_DSN: host=127.0.0.1 port=5432 user=postgres dbname=postgres
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Free runner disk space
+        run: |
+          set -euo pipefail
+          echo "before:"; df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/share/boost /usr/local/lib/node_modules \
+                      /opt/hostedtoolcache/CodeQL "${AGENT_TOOLSDIRECTORY:-}" || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          echo "after:"; df -h / | tail -1
+      - name: Install Linux packet-analysis contract dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y --no-install-recommends tshark
+          tshark --version
+      - name: Install Rust 1.97.1
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          prefix-key: v1-rust-debug0
+          env-vars: CARGO_PROFILE_DEV_DEBUG CARGO_PROFILE_TEST_DEBUG
+          cache-on-failure: true
+      - name: Prepare source-pinned libvpx 1.17.0
+        timeout-minutes: 70
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pkg-config nasm
+          source_repo="${RUNNER_TEMP}/aegis-libvpx-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          execution="${RUNNER_TEMP}/aegis-libvpx-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          receipt="${RUNNER_TEMP}/aegis-libvpx-receipt-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          test ! -e "$source_repo" && test ! -e "$execution" && test ! -e "$receipt"
+          git init -q "$source_repo"
+          git -C "$source_repo" fetch -q --depth=1 https://chromium.googlesource.com/webm/libvpx refs/tags/v1.17.0:refs/tags/v1.17.0
+          python3 -I -B scripts/qa/sfu-libvpx-native-r1.py --source-repo "$source_repo" --execution-dir "$execution" --receipt "$receipt" --ci-runner
+          pc="${execution}/prefix/lib/pkgconfig"
+          test "$(PKG_CONFIG_LIBDIR="$pc" PKG_CONFIG_PATH= pkg-config --modversion vpx)" = "1.17.0"
+          echo "PKG_CONFIG_LIBDIR=$pc" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=" >> "$GITHUB_ENV"
+          echo "VPX_VERSION=1.17.0" >> "$GITHUB_ENV"
+      - name: Clippy
+        if: ${{ !cancelled() }}
+        run: cargo clippy --keep-going --workspace --all-targets --all-features -- -D warnings
+      - name: Tests
+        if: ${{ !cancelled() }}
+        run: cargo test --workspace --all-features --no-fail-fast -- --test-threads=1
+      - name: PostgreSQL session fence integration
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          : "${AEGIS_TEST_POSTGRES_DSN:?PostgreSQL DSN is required}"
+          tests="$(cargo test --locked -p aegis-web-carrier --test postgres_ledger --features postgres-integration -- --list)"
+          printf '%s\n' "$tests"
+          for name in \
+            distinct_concurrent_claims_obey_shared_capacity \
+            lock_timeout_rejects_without_creating_a_claim \
+            owner_release_reclaims_postgres_capacity_and_revokes_sequence \
+            two_connections_fence_claim_advance_and_recover_after_reconnect; do
+            grep -Fqx "$name: test" <<< "$tests"
+          done
+          test "$(grep -c ': test$' <<< "$tests")" -eq 4
+          timeout 9m cargo test --locked -p aegis-web-carrier --test postgres_ledger --features postgres-integration -- --test-threads=1
+      - name: Ordinary hybrid gRPC process interoperability
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        run: |
+          # The shared-token hybrid positive uses the ordinary gRPC build.
+          # All-features separately proves raw-only incompatibility before startup.
+          cargo test --locked -p aegis-client --no-default-features --test direct_runtime_e2e hybrid_route_to_grpc_runtime_jsonl_e2e -- --exact --test-threads=1
+      - name: Ordinary raw TLS current and migration key interoperability
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        run: |
+          # The all-features suite selects the fresh challenge dialect.
+          # Keep the ordinary raw control exchange as a separate positive.
+          cargo test --locked -p aegis-server --no-default-features --test tls_relay_smoke tls_then_tunnel_auth_ok -- --exact --test-threads=1
+      - name: Strict P3 evidence harness contracts
+        working-directory: scripts/security/strict-p3-harness
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/aegis-p3-pycache
+        run: |
+          python3 -m py_compile monitor.py test_monitor.py
+          python3 -m unittest -v test_monitor.py
+      - name: 'Contract: vendored h2 keeps Chrome''s pseudo-header order'
+        run: bash ./scripts/test-h2-pseudo-header-order-contract.sh
+      - name: 'Contract: operator entry points stay bash 3.2 safe'
+        run: bash ./scripts/test-shell-bash32-portability-contract.sh
+  linux-arm64:
+    name: Linux ARM64 tests
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Free runner disk space
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/share/boost /usr/local/lib/node_modules \
+                      /opt/hostedtoolcache/CodeQL "${AGENT_TOOLSDIRECTORY:-}" || true
+      - name: Install Rust 1.97.1
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+      - name: Cache ARM64 cargo artifacts
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          key: linux-arm64-native
+      - name: Prepare source-pinned libvpx 1.17.0
+        timeout-minutes: 70
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pkg-config nasm
+          source_repo="${RUNNER_TEMP}/aegis-libvpx-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          execution="${RUNNER_TEMP}/aegis-libvpx-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          receipt="${RUNNER_TEMP}/aegis-libvpx-receipt-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          test ! -e "$source_repo" && test ! -e "$execution" && test ! -e "$receipt"
+          git init -q "$source_repo"
+          git -C "$source_repo" fetch -q --depth=1 https://chromium.googlesource.com/webm/libvpx refs/tags/v1.17.0:refs/tags/v1.17.0
+          python3 -I -B scripts/qa/sfu-libvpx-native-r1.py --source-repo "$source_repo" --execution-dir "$execution" --receipt "$receipt" --ci-runner
+          pc="${execution}/prefix/lib/pkgconfig"
+          test "$(PKG_CONFIG_LIBDIR="$pc" PKG_CONFIG_PATH= pkg-config --modversion vpx)" = "1.17.0"
+          echo "PKG_CONFIG_LIBDIR=$pc" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=" >> "$GITHUB_ENV"
+          echo "VPX_VERSION=1.17.0" >> "$GITHUB_ENV"
+      - name: Native ARM64 AUTO InstallLock FD custody
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          [[ "$(uname -m)" == "aarch64" ]]
+          selectors=(
+            'profile_auto_stopped_service::held_flock_tests::exact_fdinfo_lock_owner_and_inode_required'
+            'profile_auto_stopped_service::held_flock_tests::actual_temporary_flock_loss_refuses_revalidation'
+          )
+          for selector in "${selectors[@]}"; do
+            listed="$(timeout 18m cargo test --locked -p aegis-client --bin aegis-client "$selector" -- --exact --list)"
+            [[ "$(printf '%s\n' "$listed" | grep -Fxc "$selector: test")" == 1 ]]
+            timeout 18m cargo test --locked -p aegis-client --bin aegis-client "$selector" -- --exact --nocapture --test-threads=1
+          done
+      - name: Native ARM64 exact Poisson TLS/UDP positive
+        id: arm64_poisson_positive
+        run: |
+          set -euo pipefail
+          [[ "$(uname -m)" == "aarch64" ]]
+          selector='secure_channel::poisson_control::tests::actual_fresh_tls_udp_service_queue_decodes_authenticated_message'
+          listed="$(cargo test --locked -p aegis-core --all-features --lib "$selector" -- --exact --list)"
+          [[ "$(printf '%s\n' "$listed" | grep -Fxc "$selector: test")" == 1 ]]
+          cargo test --locked -p aegis-core --all-features --lib "$selector" -- --exact --nocapture --test-threads=1
+      - name: Native ARM64 remaining client, server, Brain and Geneva tests
+        if: ${{ !cancelled() && steps.arm64_poisson_positive.outcome != 'skipped' }}
+        run: |
+          set -euo pipefail
+          [[ "$(uname -m)" == "aarch64" ]]
+          selector='secure_channel::poisson_control::tests::actual_fresh_tls_udp_service_queue_decodes_authenticated_message'
+          cargo test -p aegis-core -p aegis-geneva --all-features -- --test-threads=1 --skip "$selector"
+          cargo test -p aegis-client --all-features --lib --bin aegis-client -- --test-threads=1
+          cargo test -p aegis-server --all-features --lib --bins -- --test-threads=1
+      - name: ARM64 owned carriers and native device policy
+        timeout-minutes: 10
+        run: |
+          cargo test --locked -p aegis-web-carrier -p aegis-webrtc -- --test-threads=1
+          bash ./scripts/test-native-web-carrier-contract.sh
+          bash ./scripts/test-native-web-carrier-contract.sh webrtc
+  darwin-contract:
+    name: macOS build and tests
+    runs-on: macos-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+        id: research_checkout
+      - name: macOS lab entry prerequisites without privileged execution
+        timeout-minutes: 1
+        run: |
+          set -euo pipefail
+          for case in absent nonexecutable directory symlink relative regular-with-spaces; do
+            bash scripts/test-macos-utun-helper-selection-inert.sh "$case"
+          done
+          bash scripts/test-macos-utun-main-launch-inert.sh
+          bash scripts/test-macos-relay-reference-contract.sh
+      - name: Install Rust 1.97.1
+        id: research_toolchain
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          cache-bin: false
+      - name: Prepare source-pinned libvpx 1.17.0
+        timeout-minutes: 70
+        run: |
+          set -euo pipefail
+          if ! command -v pkg-config >/dev/null 2>&1; then brew install pkgconf; fi
+          if ! command -v nasm >/dev/null 2>&1; then brew install nasm; fi
+          source_repo="${RUNNER_TEMP}/aegis-libvpx-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          execution="${RUNNER_TEMP}/aegis-libvpx-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          receipt="${RUNNER_TEMP}/aegis-libvpx-receipt-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          test ! -e "$source_repo" && test ! -e "$execution" && test ! -e "$receipt"
+          git init -q "$source_repo"
+          git -C "$source_repo" fetch -q --depth=1 https://chromium.googlesource.com/webm/libvpx refs/tags/v1.17.0:refs/tags/v1.17.0
+          python3 -I -B scripts/qa/sfu-libvpx-native-r1.py --source-repo "$source_repo" --execution-dir "$execution" --receipt "$receipt" --ci-runner
+          pc="${execution}/prefix/lib/pkgconfig"
+          test "$(PKG_CONFIG_LIBDIR="$pc" PKG_CONFIG_PATH= pkg-config --modversion vpx)" = "1.17.0"
+          echo "PKG_CONFIG_LIBDIR=$pc" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=" >> "$GITHUB_ENV"
+          echo "VPX_VERSION=1.17.0" >> "$GITHUB_ENV"
+      - name: Cargo check (darwin contract)
+        run: cargo check --workspace --all-features
+      - name: Darwin client library tests
+        run: cargo test --locked -p aegis-client --all-features --lib -- --test-threads=1
+      - name: Darwin standalone NetworkExtension native source and library tests
+        timeout-minutes: 45
+        env:
+          AEGIS_B06_TIMING_TRACE: "1"
+          CARGO_PROFILE_TEST_OPT_LEVEL: "1"
+          CARGO_PROFILE_TEST_DEBUG_ASSERTIONS: "true"
+          CARGO_PROFILE_TEST_OVERFLOW_CHECKS: "true"
+        run: |
+          set -euo pipefail
+          host_target="$(rustc -vV | sed -n 's/^host: //p')"
+          [[ "$host_target" == *-apple-darwin ]]
+          export MACOSX_DEPLOYMENT_TARGET=14.4
+          manifest=tools/macos/aegis-network-extension/Cargo.toml
+          cargo fmt --manifest-path "$manifest" -- --check
+          cargo clippy --locked --manifest-path "$manifest" --target "$host_target" --all-features --all-targets -- -D warnings
+          policy_execution="${RUNNER_TEMP}/aegis-darwin-policy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          test ! -e "$policy_execution"
+          mkdir -m 700 "$policy_execution"
+          python3 -I -B scripts/tests/test_darwin_launchd_exec.py
+          python3 -I -B scripts/tests/test_darwin_test_task_policy_runner.py
+          python3 -I -B scripts/tests/test_prepare_darwin_test_task_runner.py
+          install -m 0600 /dev/null "$policy_execution/cargo-build.jsonl"
+          cargo test --locked --manifest-path "$manifest" --target "$host_target" --all-features --lib --no-run --message-format=json > "$policy_execution/cargo-build.jsonl"
+          target_root="$(cargo metadata --locked --offline --no-deps --format-version=1 --manifest-path "$manifest" | python3 -I -B -c 'import json,sys; from pathlib import Path; print(Path(json.load(sys.stdin)["target_directory"]).resolve(strict=True))')"
+          python3 -I -B scripts/qa/prepare-darwin-test-task-runner-r1.py --repo "$PWD" --manifest "$PWD/$manifest" --host-target "$host_target" --execution "$policy_execution" --target-root "$target_root" --cargo-json "$policy_execution/cargo-build.jsonl" --output "$policy_execution/runner.toml" --expected-opt-level 1
+          python3 -I -B scripts/qa/darwin-launchd-exec-r1.py --repo "$PWD" --execution "$policy_execution/launchd" --timeout-seconds 2700 -- /usr/bin/python3 -I -B scripts/qa/darwin-process-foreground-exec-r1.py -- cargo --config "$policy_execution/runner.toml" test --locked --manifest-path "$manifest" --target "$host_target" --all-features --lib -- --test-threads=1
+          make -C tools/macos/aegis-network-extension/diagnostics/xpc-custody check
+      - name: Darwin NetworkExtension assembly and observation staging
+        timeout-minutes: 120
+        run: |
+          set -euo pipefail
+          host_target="$(rustc -vV | sed -n 's/^host: //p')"
+          [[ "$host_target" == *-apple-darwin ]]
+          export MACOSX_DEPLOYMENT_TARGET=14.4
+          python3 -I -B tools/macos/aegis-network-extension/tests/test_assemble_observe_staging.py
+      - name: Darwin ingress contract tests
+        run: |
+          set -euo pipefail
+          cargo test -p aegis-client macos_backend -- --test-threads=1
+          cargo test -p aegis-client macos_pf -- --test-threads=1
+          cargo test --locked -p aegis-client macos_tunnel -- --test-threads=1
+          cargo test --locked -p aegis-client macos_utun -- --test-threads=1
+          cargo test --locked -p aegis-client dual_stack_packet_engine_preserves_tcp_fin_and_persistent_udp -- --test-threads=1
+      - name: Darwin research runtimes and authenticated caller contracts
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # The ingress-only filters above do not select core numerical tests.
+          # Execute the numerical kernels, owned Poisson SDKs and protected callers;
+          # it is source interoperability evidence, not installed VM acceptance.
+          cargo test --locked -p aegis-core --all-features --lib -- --test-threads=1
+      - name: Darwin client authenticated caller contracts
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: |
+          cargo test --locked -p aegis-client --all-features --bin aegis-client relay::secure::tests::liu_tests:: -- --test-threads=1
+      - name: Darwin client process startup
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: |
+          cargo test --locked -p aegis-client --all-features --test startup_stack_e2e real_client_version_enters_async_runtime_on_default_main_stack -- --test-threads=1
+      - name: macOS restricted browser proxy Keychain regression
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: |
+          rustc --edition=2021 --test tools/macos/proxy-keychain.rs -o "$RUNNER_TEMP/aegis-proxy-keychain-tests"
+          "$RUNNER_TEMP/aegis-proxy-keychain-tests"
+          bash scripts/test-macos-browser-proxy-privacy-contract.sh
+      - name: macOS bundled MASQUE CA installation contract
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          cargo test --locked -p aegis-client --bin aegis-client profile::bundle_ca::tests:: -- --list > "$RUNNER_TEMP/aegis-bundled-ca-tests.list"
+          python3 -I - "$RUNNER_TEMP/aegis-bundled-ca-tests.list" <<'PY'
+          import pathlib, sys
+          tests = [line for line in pathlib.Path(sys.argv[1]).read_text().splitlines() if line.startswith('profile::bundle_ca::tests::') and line.endswith(': test')]
+          if len(tests) != 8 or len(set(tests)) != 8:
+              raise SystemExit('Expected eight bundled CA regression tests')
+          PY
+          cargo test --locked -p aegis-client --bin aegis-client profile::bundle_ca::tests:: -- --test-threads=1
+          cargo test --locked -p aegis-client --bin aegis-client profile::project_license::unix::tests:: -- --list > "$RUNNER_TEMP/aegis-project-license-tests.list"
+          python3 -I - "$RUNNER_TEMP/aegis-project-license-tests.list" <<'PY'
+          import pathlib, sys
+          tests = [line for line in pathlib.Path(sys.argv[1]).read_text().splitlines() if line.startswith('profile::project_license::unix::tests::') and line.endswith(': test')]
+          if len(tests) != 6 or len(set(tests)) != 6:
+              raise SystemExit('Expected six project license descriptor regression tests')
+          PY
+          cargo test --locked -p aegis-client --bin aegis-client profile::project_license::unix::tests:: -- --test-threads=1
+          cargo build --locked -p aegis-client --bin aegis-client
+          cargo build --locked -p aegis-measure --bin aegis-measure
+          export AEGIS_TEST_MEASURE="$PWD/target/debug/aegis-measure"
+          [[ -f "$AEGIS_TEST_MEASURE" && ! -L "$AEGIS_TEST_MEASURE" && -x "$AEGIS_TEST_MEASURE" ]] || {
+            echo 'Expected the just-built regular executable manifest writer' >&2
+            exit 1
+          }
+          AEGIS_TEST_MEASURE_SHA256="$(shasum -a 256 "$AEGIS_TEST_MEASURE" | awk '{print $1}')"
+          [[ "$AEGIS_TEST_MEASURE_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          export AEGIS_TEST_MEASURE_SHA256
+          AEGIS_TEST_SECRET_CLIENT="$PWD/target/debug/aegis-client" bash scripts/test-macos-bundled-masque-ca-contract.sh
+      - name: Darwin helper descriptor ownership contracts
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          # Unprivileged socketpairs only: this never starts the helper or utun.
+          cargo test --locked -p macos-utun-lab --bin aegis-macos-utun-lab -- --list > "$RUNNER_TEMP/aegis-fd-tests.list"
+          python3 -I - "$RUNNER_TEMP/aegis-fd-tests.list" <<'PY'
+          import pathlib, sys
+          listed = {line.removesuffix(': test') for line in pathlib.Path(sys.argv[1]).read_text().splitlines() if line.endswith(': test')}
+          required = {
+              'fd_ipc::tests::actual_fd_transfer_preserves_the_single_descriptor_and_name',
+              'fd_ipc::tests::actual_received_descriptor_is_close_on_exec',
+              'fd_ipc::tests::actual_multiple_or_truncated_rights_are_refused',
+              'fd_ipc::peer_tests::actual_uid_or_pid_mismatch_prevents_descriptor_transfer',
+              'fd_ipc::peer_tests::actual_refused_transfer_closes_all_installed_descriptors',
+              'fd_ipc::peer_tests::unsupported_capacity_refuses_before_receive_and_keeps_the_owned_message_pending',
+          }
+          missing = required - listed
+          if missing:
+              raise SystemExit('Missing descriptor regression tests: ' + ', '.join(sorted(missing)))
+          PY
+          cargo test --locked -p macos-utun-lab --bin aegis-macos-utun-lab -- --test-threads=1
+      - name: Darwin compiled forensic client contract
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          # Separate compiled profile; do not change later steps or the cache.
+          export RUSTFLAGS="${RUSTFLAGS:-} --cfg forensic_safe"
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/aegis-forensic-safe"
+          cargo check --locked -p aegis-client --bin aegis-client
+          cargo test --locked -p aegis-client --lib runtime_event_stream::forensic_build_tests:: -- --list > "$RUNNER_TEMP/aegis-forensic-tests.list"
+          cargo test --locked -p aegis-client --lib brain_state::tests:: -- --list > "$RUNNER_TEMP/aegis-forensic-privacy-tests.list"
+          python3 -I - "$RUNNER_TEMP/aegis-forensic-tests.list" "$RUNNER_TEMP/aegis-forensic-privacy-tests.list" <<'PY'
+          import pathlib, sys
+          def names(path):
+              return {line.removesuffix(': test') for line in pathlib.Path(path).read_text().splitlines() if line.endswith(': test')}
+          fixture = 'runtime_event_stream::forensic_build_tests::compiled_forensic_sink_ignores_explicit_path_and_preserves_existing_log'
+          if names(sys.argv[1]) != {fixture}:
+              raise SystemExit('Compiled forensic sink regression was not selected exactly')
+          required = {
+              'brain_state::tests::default_modes_keep_destination_learning_in_ram_and_preserve_existing_disk',
+              'brain_state::tests::relay_remains_ram_only_even_with_direct_persistence_consent',
+              'brain_state::tests::forensic_policy_overrides_direct_persistence_consent',
+              'brain_state::tests::valid_prior_destination_snapshot_is_not_loaded_without_consent',
+              'brain_state::tests::explicit_direct_consent_retains_disk_learning',
+          }
+          missing = required - names(sys.argv[2])
+          if missing:
+              raise SystemExit('Missing compiled privacy regression tests: ' + ', '.join(sorted(missing)))
+          PY
+          cargo test --locked -p aegis-client --lib runtime_event_stream::forensic_build_tests::compiled_forensic_sink_ignores_explicit_path_and_preserves_existing_log -- --exact --test-threads=1
+          cargo test --locked -p aegis-client --lib brain_state::tests:: -- --test-threads=1
+      - name: Darwin server authenticated caller contracts
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: |
+          cargo test --locked -p aegis-server --all-features --lib session::grpc::secure_tests::liu_tests:: -- --test-threads=1
+      - name: Darwin application-owned Poisson timing positive
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          selector='actual_paired_timing_cli_ready_udp_fifo_and_authenticated_output'
+          listed="$(cargo test --locked -p aegis-measure --test poisson_control_operator "$selector" -- --exact --list)"
+          printf '%s\n' "$listed" | grep -Fqx -- "$selector: test"
+          for iteration in 1 2 3; do
+            printf 'Darwin Poisson required process %s / 3\n' "$iteration"
+            cargo test --locked -p aegis-measure --test poisson_control_operator "$selector" -- --exact --nocapture --test-threads=1
+          done
+      - name: Darwin application-owned Poisson operators remaining
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: |
+          cargo test --locked --no-fail-fast -p aegis-measure --test poisson_insertion_operator --test poisson_control_operator -- --test-threads=1 --skip actual_paired_timing_cli_ready_udp_fifo_and_authenticated_output
+      - name: Darwin ingress preflight JSON
+        run: |
+          python3 - <<'PY'
+          from contextlib import contextmanager
+          import json
+          import os
+          import subprocess
+          import tempfile
+          import textwrap
+          from pathlib import Path
+
+          HEADER = """
+          mode = "direct"
+          """
+
+          FOOTER = """
+          [direct]
+          state_path = "~/.cache/aegis/state.json"
+          strategies = ["passthrough"]
+          epsilon = 0.1
+          first_chunk_timeout_ms = 8000
+          freeze_threshold_bytes = 16384
+          degraded_latency_ms = 5000
+          tls_grease = false
+          sni_case_obfuscate = false
+          inject_opaque_extension = false
+          ghost_jitter_before_attempt = false
+
+          [relay]
+          server = "127.0.0.1:8443"
+          server_name = "localhost"
+          auth_token = ""
+          """
+
+          def parse_report(case_name, proc):
+              for stream in (proc.stdout, proc.stderr, proc.stdout + "\n" + proc.stderr):
+                  payload = stream.strip()
+                  if not payload:
+                      continue
+                  start = payload.find("{")
+                  end = payload.rfind("}")
+                  if start == -1 or end == -1 or end <= start:
+                      continue
+                  try:
+                      return json.loads(payload[start:end + 1])
+                  except json.JSONDecodeError:
+                      continue
+              raise AssertionError((case_name, "missing_json_report", proc.returncode, proc.stdout, proc.stderr))
+
+          @contextmanager
+          def helper_backed_env(case_name, cfg_text):
+              env = os.environ.copy()
+              if case_name != "darwin_macos_pf_system_wide_boundary_fallback":
+                  yield env
+                  return
+              listen = "0.0.0.0:15080"
+              assert f'listen = "{listen}"' in cfg_text, (case_name, cfg_text)
+              with tempfile.TemporaryDirectory() as td:
+                  td = Path(td)
+                  state_path = td / "macos-pf-system-wide-boundary-state.json"
+                  for tool_name in ("pfctl", "ifconfig", "route"):
+                      stub_path = td / tool_name
+                      stub_path.write_text("#!/usr/bin/env bash\nexit 0\n")
+                      stub_path.chmod(0o755)
+                  helper_env = env.copy()
+                  helper_env.update(
+                      {
+                          "AEGIS_MACOS_PF_STATE_PATH": str(state_path),
+                          "AEGIS_MACOS_PF_HELPER_UNAME": "Darwin",
+                          "AEGIS_MACOS_PF_HELPER_APPLY_MODE": "simulate",
+                          "AEGIS_MACOS_PF_HELPER_PFCTL_BIN": str(td / "pfctl"),
+                          "AEGIS_MACOS_PF_HELPER_IFCONFIG_BIN": str(td / "ifconfig"),
+                          "AEGIS_MACOS_PF_HELPER_ROUTE_BIN": str(td / "route"),
+                          "AEGIS_MACOS_PF_LISTEN": listen,
+                          "AEGIS_MACOS_PF_REDIRECT_FROM": "10.10.0.5:28084",
+                          "AEGIS_MACOS_PF_TARGET": "127.0.0.1:15080",
+                          "AEGIS_MACOS_PF_DNS_PREVIEW_ENABLED": "1",
+                          "AEGIS_MACOS_PF_DNS_REDIRECT_FROM": "1.1.1.1:53",
+                          "AEGIS_MACOS_PF_DNS_TARGET": "127.0.0.1:15080",
+                          "AEGIS_MACOS_PF_SYSTEM_WIDE_ENABLED": "1",
+                      }
+                  )
+                  helper_proc = subprocess.run(
+                      ["bash", "./scripts/macos-wide-pf.sh", "apply", "--json"],
+                      check=False,
+                      capture_output=True,
+                      text=True,
+                      env=helper_env,
+                  )
+                  assert helper_proc.returncode == 0, (
+                      case_name,
+                      "helper_apply",
+                      helper_proc.returncode,
+                      helper_proc.stdout,
+                      helper_proc.stderr,
+                  )
+                  env["AEGIS_MACOS_PF_STATE_PATH"] = str(state_path)
+                  yield env
+
+          cases = [
+              {
+                  "name": "darwin_auto_fallback",
+                  "expect_exit": 0,
+                  "expect_startup_exit": 0,
+                  "config": """
+                  [ingress]
+                  primary = "wide"
+                  allow_fallback = true
+
+                  [ingress.wide]
+                  enabled = true
+                  platform_backend = "auto"
+                  listen = "0.0.0.0:0"
+                  capture_dns = false
+                  default_mark = 0
+                  """,
+                  "preflight_assertions": lambda report: (
+                      report["status"] == "ok"
+                      and report["selection"]["requested_primary"] == "wide"
+                      and report["selection"]["selected_backend"] == "socks5_fallback"
+                      and report["selection"]["fallback_reason_code"] == "unsupported_wide_backend"
+                      and report["selection"]["wide_platform_family_supported"] is True
+                      and report["selection"]["wide_supported"] is False
+                      and report["selection"]["wide_runtime_readiness"] == "unsupported_adapter"
+                      and report["selection"]["wide_platform"] == "auto"
+                      and "linux_validation_bootstrap_check_command" not in report["selection"]
+                      and "linux_validation_bootstrap_install_command" not in report["selection"]
+                  ),
+                  "startup_assertions": lambda report: (
+                      report["status"] == "ok"
+                      and report["selection"]["requested_primary"] == "wide"
+                      and report["selection"]["selected_backend"] == "socks5_fallback"
+                      and report["selection"]["fallback_reason_code"] == "unsupported_wide_backend"
+                      and report["selection"]["wide_platform_family_supported"] is True
+                      and report["selection"]["wide_supported"] is False
+                      and report["selection"]["wide_runtime_readiness"] == "unsupported_adapter"
+                      and report["selection"]["wide_platform"] == "auto"
+                      and report["startup"]["code"] == "socks5_fallback_started"
+                      and report["startup"]["started_backend"] == "socks5_fallback"
+                      and report["startup"]["failure_code"] is None
+                      and report["startup"]["hint_code"] is None
+                      and "linux_validation_bootstrap_check_command" not in report["selection"]
+                      and "linux_validation_bootstrap_install_command" not in report["selection"]
+                  ),
+              },
+              {
+                  "name": "darwin_macos_pf_error",
+                  "expect_exit": 1,
+                  "expect_startup_exit": 1,
+                  "config": """
+                  [ingress]
+                  primary = "wide"
+                  allow_fallback = false
+
+                  [ingress.wide]
+                  enabled = true
+                  platform_backend = "macos_pf"
+                  listen = "0.0.0.0:0"
+                  capture_dns = false
+                  default_mark = 0
+                  """,
+                  "preflight_assertions": lambda report: (
+                      report["status"] == "error"
+                      and report["selection"]["requested_primary"] == "wide"
+                      and report["selection"]["selection_error_code"] == "unsupported_wide_backend"
+                      and report["selection"]["selection_hint_code"] == "use_supported_backend_or_allow_fallback"
+                      and report["selection"]["wide_platform_family_supported"] is True
+                      and report["selection"]["wide_supported"] is False
+                      and report["selection"]["wide_runtime_readiness"] == "unsupported_adapter"
+                      and report["selection"]["wide_platform"] == "macos_pf"
+                      and report["selection"]["wide_backend_current_stage"] == "adapter_skeleton"
+                      and report["selection"]["wide_backend_scope_target"] == "tcp_only_phase1"
+                      and report["selection"]["wide_backend_reason_code"] == "tcp_only_phase1_requires_loopback_listener"
+                      and any(
+                          note["code"] == "macos_pf_tcp_only_epic"
+                          for note in report["selection"]["backend_notes"]
+                      )
+                      and "linux_validation_bootstrap_check_command" not in report["selection"]
+                      and "linux_validation_bootstrap_install_command" not in report["selection"]
+                  ),
+                  "startup_assertions": lambda report: (
+                      report["status"] == "error"
+                      and report["selection"]["requested_primary"] == "wide"
+                      and report["selection"]["selection_error_code"] == "unsupported_wide_backend"
+                      and report["selection"]["selection_hint_code"] == "use_supported_backend_or_allow_fallback"
+                      and report["selection"]["wide_platform_family_supported"] is True
+                      and report["selection"]["wide_supported"] is False
+                      and report["selection"]["wide_runtime_readiness"] == "unsupported_adapter"
+                      and report["selection"]["wide_platform"] == "macos_pf"
+                      and report["selection"]["wide_backend_current_stage"] == "adapter_skeleton"
+                      and report["selection"]["wide_backend_scope_target"] == "tcp_only_phase1"
+                      and report["selection"]["wide_backend_reason_code"] == "tcp_only_phase1_requires_loopback_listener"
+                      and any(
+                          note["code"] == "macos_pf_tcp_only_epic"
+                          for note in report["selection"]["backend_notes"]
+                      )
+                      and "startup" not in report
+                      and "linux_validation_bootstrap_check_command" not in report["selection"]
+                      and "linux_validation_bootstrap_install_command" not in report["selection"]
+                  ),
+              },
+              {
+                  "name": "darwin_macos_pf_system_wide_boundary_fallback",
+                  "expect_exit": 0,
+                  "expect_startup_exit": 0,
+                  "config": """
+                  [ingress]
+                  primary = "wide"
+                  allow_fallback = true
+
+                  [ingress.wide]
+                  enabled = true
+                  platform_backend = "macos_pf"
+                  listen = "0.0.0.0:15080"
+                  capture_dns = true
+                  udp_capture_contract = "generic_capture_unstable"
+                  default_mark = 0
+                  """,
+                  "preflight_assertions": lambda report: (
+                      report["status"] == "ok"
+                      and report["selection"]["requested_primary"] == "wide"
+                      and report["selection"]["selected_backend"] == "socks5_fallback"
+                      and report["selection"]["fallback_reason_code"] == "wide_backend_boundary_only"
+                      and report["selection"]["wide_platform_family_supported"] is True
+                      and report["selection"]["wide_supported"] is False
+                      and report["selection"]["wide_runtime_readiness"] == "boundary_only"
+                      and report["selection"]["wide_platform"] == "macos_pf"
+                      and report["selection"]["wide_udp_capture_contract_requested"] == "generic_capture_unstable"
+                      and report["selection"]["wide_udp_capture_support_tier_requested"] == "guarded_unstable"
+                      and any(
+                          note["code"] == "macos_pf_system_wide_phase3_boundary"
+                          for note in report["selection"]["backend_notes"]
+                      )
+                      and "linux_validation_bootstrap_check_command" not in report["selection"]
+                      and "linux_validation_bootstrap_install_command" not in report["selection"]
+                  ),
+                  "startup_assertions": lambda report: (
+                      report["status"] == "ok"
+                      and report["selection"]["requested_primary"] == "wide"
+                      and report["selection"]["selected_backend"] == "socks5_fallback"
+                      and report["selection"]["fallback_reason_code"] == "wide_backend_boundary_only"
+                      and report["selection"]["wide_platform_family_supported"] is True
+                      and report["selection"]["wide_supported"] is False
+                      and report["selection"]["wide_runtime_readiness"] == "boundary_only"
+                      and report["selection"]["wide_platform"] == "macos_pf"
+                      and report["startup"]["code"] == "socks5_fallback_started"
+                      and report["startup"]["started_backend"] == "socks5_fallback"
+                      and report["startup"]["failure_code"] is None
+                      and report["startup"]["hint_code"] is None
+                      and "linux_validation_bootstrap_check_command" not in report["selection"]
+                      and "linux_validation_bootstrap_install_command" not in report["selection"]
+                  ),
+              },
+          ]
+
+          for case in cases:
+              config_body = textwrap.dedent(case["config"]).strip()
+              if "[socks]" not in config_body:
+                  config_body += '\n\n[socks]\nlisten = "127.0.0.1:0"'
+              full_config = (
+                  textwrap.dedent(HEADER).strip()
+                  + "\n\n"
+                  + config_body
+                  + "\n\n"
+                  + textwrap.dedent(FOOTER).strip()
+                  + "\n"
+              )
+              with helper_backed_env(case["name"], full_config) as case_env:
+                  with tempfile.NamedTemporaryFile("w", suffix=".toml", delete=False) as cfg:
+                      cfg.write(full_config)
+                      cfg_path = cfg.name
+                  try:
+                      proc = subprocess.run(
+                          ["cargo", "run", "-p", "aegis-client", "--", "--config", cfg_path, "--ingress-preflight", "--json"],
+                          check=False,
+                          capture_output=True,
+                          text=True,
+                          env=case_env,
+                      )
+                      assert proc.returncode == case["expect_exit"], (
+                          case["name"],
+                          proc.returncode,
+                          proc.stdout,
+                          proc.stderr,
+                      )
+                      report = parse_report(case["name"], proc)
+                      assert case["preflight_assertions"](report), (case["name"], "preflight", report)
+                      startup_proc = subprocess.run(
+                          ["cargo", "run", "-p", "aegis-client", "--", "--config", cfg_path, "--ingress-startup-probe", "--json"],
+                          check=False,
+                          capture_output=True,
+                          text=True,
+                          env=case_env,
+                      )
+                      assert startup_proc.returncode == case["expect_startup_exit"], (
+                          case["name"],
+                          "startup_probe",
+                          startup_proc.returncode,
+                          startup_proc.stdout,
+                          startup_proc.stderr,
+                      )
+                      startup_report = parse_report(case["name"], startup_proc)
+                      assert case["startup_assertions"](startup_report), (
+                          case["name"],
+                          "startup_probe",
+                          startup_report,
+                      )
+                  finally:
+                      Path(cfg_path).unlink(missing_ok=True)
+          PY
+      - name: Ingress bind fails before runtime init
+        run: |
+          python3 - <<'PY'
+          import socket
+          import subprocess
+          import tempfile
+          import textwrap
+          from pathlib import Path
+
+          with tempfile.TemporaryDirectory() as td:
+              td = Path(td)
+              cfg_path = td / "bind-before-runtime.toml"
+
+              with socket.socket() as listener:
+                  listener.bind(("127.0.0.1", 0))
+                  busy_port = listener.getsockname()[1]
+
+                  cfg_path.write_text(
+                      textwrap.dedent(
+                          f"""
+                          mode = "direct"
+
+                          [ingress]
+                          primary = "socks5"
+                          allow_fallback = false
+
+                          [socks]
+                          listen = "127.0.0.1:{busy_port}"
+
+                          [direct]
+                          state_path = "/dev/null/state.json"
+                          strategies = ["passthrough"]
+                          epsilon = 0.0
+                          first_chunk_timeout_ms = 1000
+                          freeze_threshold_bytes = 16384
+                          degraded_latency_ms = 5000
+                          tls_grease = false
+                          sni_case_obfuscate = false
+                          inject_opaque_extension = false
+                          ghost_jitter_before_attempt = false
+                          """
+                      ).strip()
+                      + "\n"
+                  )
+                  cfg_path.chmod(0o600)
+
+                  proc = subprocess.run(
+                      [
+                          "cargo",
+                          "run",
+                          "-p",
+                          "aegis-client",
+                          "--",
+                          "--config",
+                          str(cfg_path),
+                          "--diagnostic-logs",
+                      ],
+                      text=True,
+                      capture_output=True,
+                  )
+
+              combined = proc.stdout + proc.stderr
+              assert proc.returncode != 0, combined
+              assert "/dev/null/state.json" not in combined, combined
+              assert "address already in use" in combined.lower(), combined
+          PY
+  windows-rust:
+    name: Windows build, Clippy and tests
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+        id: research_checkout
+      - name: Windows retired legacy service installer refusal (PowerShell 5.1)
+        timeout-minutes: 1
+        shell: powershell
+        run: .\scripts\windows\test-legacy-service-install-refusal-contract.ps1 -InstallerPath .\scripts\windows\install-windows-service.ps1
+      - name: Windows retired legacy service installer refusal (PowerShell 7)
+        timeout-minutes: 1
+        shell: pwsh
+        run: .\scripts\windows\test-legacy-service-install-refusal-contract.ps1 -InstallerPath .\scripts\windows\install-windows-service.ps1
+      - name: Windows retired WFP driver installer refusal (PowerShell 5.1)
+        timeout-minutes: 1
+        shell: powershell
+        run: .\scripts\windows\test-legacy-wfp-install-refusal-contract.ps1 -InstallerPath .\scripts\windows\install-wfp-proof.ps1
+      - name: Windows retired WFP driver installer refusal (PowerShell 7)
+        timeout-minutes: 1
+        shell: pwsh
+        run: .\scripts\windows\test-legacy-wfp-install-refusal-contract.ps1 -InstallerPath .\scripts\windows\install-wfp-proof.ps1
+      - name: Windows build-tool hash acquisition and admission (PowerShell 5.1)
+        timeout-minutes: 7
+        shell: powershell
+        run: |
+          $python = (Get-Command python -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+          $engine = (Get-Command powershell -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+          $output = Join-Path $env:RUNNER_TEMP 'aegis-build-tools-hashes-ps51'
+          & $python -I scripts/test-windows-build-tools-hash-contract.py --repo . --evidence-dir $output --powershell $engine
+          if ($LASTEXITCODE -ne 0) { throw 'Windows build-tool acquisition/admission contract failed' }
+      - name: Windows build-tool hash acquisition and admission (PowerShell 7)
+        timeout-minutes: 7
+        shell: pwsh
+        run: |
+          $python = (Get-Command python -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+          $engine = (Get-Command pwsh -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+          $output = Join-Path $env:RUNNER_TEMP 'aegis-build-tools-hashes-ps7'
+          & $python -I scripts/test-windows-build-tools-hash-contract.py --repo . --evidence-dir $output --powershell $engine
+          if ($LASTEXITCODE -ne 0) { throw 'Windows build-tool acquisition/admission contract failed' }
+      - name: Isolate pinned Windows toolchain from runner image residue
+        shell: pwsh
+        run: |
+          $rustupRoot = Join-Path $env:RUNNER_TEMP "aegis-rustup-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          if (Test-Path -LiteralPath $rustupRoot) { throw 'Pinned toolchain output already exists' }
+          New-Item -ItemType Directory -Path $rustupRoot -ErrorAction Stop | Out-Null
+          "RUSTUP_HOME=$rustupRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Install Rust 1.97.1
+        id: research_toolchain
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          key: windows-native-ninja-v1
+          cache-on-failure: true
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Prepare Windows TLS and QUIC native build tools
+        shell: pwsh
+        run: |
+          ./tools/windows/prepare-build.ps1 -Bootstrap
+          Add-Content $env:GITHUB_PATH $env:AEGIS_NATIVE_NINJA_PATH
+          # GitHub prepends entries: native CMake must precede pip's Scripts shim.
+          Add-Content $env:GITHUB_PATH $env:AEGIS_NATIVE_CMAKE_PATH
+          Add-Content $env:GITHUB_ENV "CMAKE=$env:CMAKE"
+          Add-Content $env:GITHUB_ENV "LIBCLANG_PATH=$env:LIBCLANG_PATH"
+          Add-Content $env:GITHUB_ENV "CMAKE_GENERATOR=$env:CMAKE_GENERATOR"
+          Add-Content $env:GITHUB_ENV "AWS_LC_SYS_PREBUILT_NASM=1"
+      - name: Verify native tools in fresh step environment
+        shell: pwsh
+        run: |
+          $resolved = (Get-Command cmake -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+          if ($resolved -ne $env:CMAKE) { throw "CMake PATH shadowing: $resolved" }
+          & $env:CMAKE --version
+          if ($LASTEXITCODE -ne 0) { throw 'Native CMake cannot execute' }
+          & ninja --version
+          if ($LASTEXITCODE -ne 0) { throw 'Native Ninja cannot execute' }
+      - name: Windows exact-child deadline regressions
+        timeout-minutes: 2
+        shell: pwsh
+        run: |
+          $testExe = Join-Path $env:RUNNER_TEMP 'aegis-owned-process-tests.exe'
+          if (Test-Path -LiteralPath $testExe) { throw 'Unexpected existing test executable' }
+          rustc --edition=2021 --test aegis-client/src/ingress/wide/ip_tunnel/tests/owned_process.rs -o $testExe
+          if ($LASTEXITCODE -ne 0) { throw 'Owned-process tests did not compile' }
+          & $testExe --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'Owned-process deadline regression failed' }
+      - name: Windows full-host deadline contracts
+        timeout-minutes: 25
+        shell: pwsh
+        run: |
+          cargo test --locked -p aegis-client --bin aegis-client --features chrome-like-tls,chrome-like-quic,windows-host-acceptance ingress::wide::ip_tunnel::tests::full_host::tests:: -- --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'Windows full-host deadline contract failed' }
+      - name: Windows adapter entry custody Rust regressions
+        run: |
+          cargo test --locked -p aegis-winctl package::adapter::tests:: -- --test-threads=1
+      - name: Windows user-mode check
+        run: cargo check --locked -p aegis-client -p aegis-server -p aegis-winctl --features aegis-client/chrome-like-tls,aegis-client/chrome-like-quic,aegis-client/webrtc-carrier,aegis-server/webrtc-carrier
+      - name: Windows owned web and WebRTC loopback carriers
+        run: cargo test --locked -p aegis-web-carrier -p aegis-webrtc -- --test-threads=1
+      - name: Windows strict Clippy
+        run: cargo clippy --locked -p aegis-client -p aegis-winctl -p aegis-quic-boring --all-targets --features aegis-client/chrome-like-tls,aegis-client/chrome-like-quic,aegis-client/webrtc-carrier -- -D warnings
+      - name: Windows exact owned Poisson SDK UDP positive
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          $selector = 'traffic_privacy::poisson_channel::tests::fixed_prior_seed_actual_sdk_udp_codebooks_decode_authenticated_record'
+          $listed = @(cargo test --locked -p aegis-core --lib $selector -- --exact --list)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($listed -notcontains ('{0}: test' -f $selector)) { throw "Exact owned Poisson method was not selected" }
+          # Three mandatory fresh processes. Every run must pass; this is not a retry.
+          foreach ($iteration in 1..3) {
+            Write-Host "Poisson required process $iteration / 3"
+            cargo test --locked -p aegis-core --lib $selector -- --exact --nocapture --test-threads=1
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Fetch and verify official signed Wintun
+        shell: pwsh
+        run: ./tools/windows/fetch-wintun.ps1 -Destination ./target/wintun-pinned
+      - name: Native Wintun, scoped WFP and real TCP UDP DNS sockets
+        shell: pwsh
+        run: |
+          $env:AEGIS_TEST_WINTUN = (Resolve-Path target/wintun-pinned/bin/amd64/wintun.dll).Path
+          $env:AEGIS_SOAK_SECONDS = '30'
+          $env:AEGIS_SOAK_RESULT = Join-Path $env:RUNNER_TEMP 'windows-tunnel-soak.json'
+          $env:AEGIS_SOAK_INNER_TLS = '1'
+          $env:AEGIS_TEST_SOAK_PCAP = Join-Path $env:RUNNER_TEMP 'windows-soak-first-round.pcap'
+          $env:AEGIS_TEST_NATIVE_PCAP = Join-Path $env:RUNNER_TEMP 'windows-native-sockets.pcap'
+          cargo test --locked -p aegis-core --lib windows_tunnel:: -- --include-ignored --test-threads=1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Disposable runner diagnostics: no firewall rule is disabled or relaxed.
+          netsh wfp set options netevents=on
+          auditpol /set /subcategory:"Filtering Platform Connection" /failure:enable
+          auditpol /set /subcategory:"Filtering Platform Packet Drop" /failure:enable
+          $started = Get-Date
+          cargo test --locked -p aegis-client --features chrome-like-tls,chrome-like-quic --bin aegis-client ingress::wide::ip_tunnel:: -- --include-ignored --test-threads=1 --nocapture
+          $testExit = $LASTEXITCODE
+          # Reproduce the observed intermittent half-close stall with separate
+          # packet traces. Preserve any earlier failure; retries cannot green it.
+          foreach ($trial in 1..2) {
+            $env:AEGIS_TEST_NATIVE_PCAP = Join-Path $env:RUNNER_TEMP "windows-native-sockets-$trial.pcap"
+            cargo test --locked -p aegis-client --features chrome-like-tls,chrome-like-quic --bin aegis-client ingress::wide::ip_tunnel::tests::real_windows_sockets_dns_tcp_udp_through_signed_wintun -- --exact --ignored --test-threads=1 --nocapture
+            if ($LASTEXITCODE -ne 0) { $testExit = $LASTEXITCODE }
+          }
+          $events = Join-Path $env:RUNNER_TEMP 'windows-tunnel-wfp.xml'
+          netsh wfp show netevents "file=$events" remoteaddr=198.18.0.2
+          Get-Content $events
+          Get-WinEvent -FilterHashtable @{LogName='Security'; Id=5152,5157; StartTime=$started} -ErrorAction SilentlyContinue |
+            Where-Object { $_.ToXml() -match 'aegis_client|198\.18\.0\.2' } |
+            Select-Object -First 30 | ForEach-Object { $_.ToXml() }
+          exit $testExit
+      - name: Windows wide user-mode tests
+        run: cargo test --locked -p aegis-client --no-default-features --features aegis-client/chrome-like-tls,aegis-client/chrome-like-quic,aegis-client/webrtc-carrier --lib --bin aegis-client -- --test-threads=1
+      - name: Windows QUIC crypto and emitted ClientHello contracts
+        run: cargo test --locked -p aegis-quic-boring --features boring --all-targets
+      - name: Windows ACL, secret storage and transport tests
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: cargo test --locked -p aegis-core --all-targets -- --test-threads=1 --skip traffic_privacy::poisson_channel::tests::fixed_prior_seed_actual_sdk_udp_codebooks_decode_authenticated_record
+      - name: Windows QUIC startup refusal diagnostics
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          cargo test --locked -p aegis-server --lib quic_startup_tests:: -- --test-threads=1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo test --locked -p aegis-server --lib session::quic::startup::tests:: -- --test-threads=1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows shared H2 cooperative progress and authorization
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        timeout-minutes: 8
+        run: |
+          cargo test --locked -p aegis-server --lib session::grpc:: -- --test-threads=1
+      - name: Windows client process integration
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: cargo test --locked -p aegis-client --test direct_runtime_e2e --test ingress_runtime_e2e --test udp_masque_send_e2e --test startup_stack_e2e --no-default-features --features aegis-client/chrome-like-tls,aegis-client/chrome-like-quic -- --test-threads=1
+      - name: Windows application-owned Poisson operators
+        if: ${{ !cancelled() && steps.research_checkout.outcome == 'success' && steps.research_toolchain.outcome == 'success' }}
+        run: cargo test --locked --no-fail-fast -p aegis-measure --test poisson_insertion_operator --test poisson_control_operator -- --test-threads=1
+      - name: Windows package and control-plane tests
+        run: cargo test --locked -p aegis-winctl
+      - name: Build Windows test binaries
+        run: cargo build --locked -p aegis-client -p aegis-winctl --no-default-features --features aegis-client/chrome-like-tls,aegis-client/chrome-like-quic
+      - name: Windows package, LocalService and LocalSystem lifecycle
+        shell: pwsh
+        run: |
+          $env:AEGIS_SCM_TEST_CLIENT = (Resolve-Path target/debug/aegis-client.exe).Path
+          $env:AEGIS_TEST_CLIENT = $env:AEGIS_SCM_TEST_CLIENT
+          $env:AEGIS_TEST_WINCTL = (Resolve-Path target/debug/aegis-winctl.exe).Path
+          $env:AEGIS_TEST_WINTUN_ROOT = (Resolve-Path target/wintun-pinned).Path
+          $env:AEGIS_LIFECYCLE_RESULT = Join-Path $env:RUNNER_TEMP 'windows-lifecycle.json'
+          # Cross-account checkpoint proof needs separate administrator and SYSTEM processes.
+          cargo test --locked -p aegis-winctl -- --include-ignored --skip checkpoint_cross_account --test-threads=1

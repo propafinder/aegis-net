@@ -1,0 +1,19 @@
+[Unit]
+Description=AEGIS AUTO authenticated PID1 final job observer
+DefaultDependencies=no
+IgnoreOnIsolate=yes
+SurviveFinalKillSignal=yes
+After=local-fs.target dbus.service dbus.socket
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_terminal_witness.py observer
+Restart=no
+TimeoutStartSec=10s
+TimeoutStopSec=10s
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

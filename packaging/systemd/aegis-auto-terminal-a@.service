@@ -1,0 +1,14 @@
+[Unit]
+Description=AEGIS AUTO normal terminal A for exact private unit %i
+Requires=aegis-auto-terminal-observer.service
+PartOf=aegis-auto@%i.service
+After=aegis-auto@%i.service aegis-auto-terminal-observer.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_terminal_witness.py mark-a %i
+TimeoutStopSec=10s
+UMask=0077
+NoNewPrivileges=yes

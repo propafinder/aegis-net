@@ -1,0 +1,12 @@
+--- a/src/handshake/client.rs
++++ b/src/handshake/client.rs
+@@ -180,7 +180,8 @@
+     }
+ 
+     writeln!(req, "\r").unwrap();
+-    trace!("Request: {:?}", String::from_utf8_lossy(&req));
++    // AEGIS: requests may contain bearer credentials. Do not trace bytes.
++    trace!("Client upgrade request prepared ({} bytes)", req.len());
+     Ok((req, key))
+ }
+ 

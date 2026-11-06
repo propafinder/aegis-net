@@ -1,0 +1,44 @@
+AEGIS
+
+Authored workspace packages declare MIT OR Apache-2.0 in Cargo.toml.
+The project license texts do not relicense third-party code or historical
+operational evidence.
+
+Third-party components include:
+
+* h2, vendored under third_party/h2, MIT licensed. Preserve its LICENSE and
+  upstream notices. AEGIS-PATCH.md records the local pseudo-header-order patch.
+* tungstenite, vendored under third_party/tungstenite, MIT OR Apache-2.0.
+  Its LICENSE-MIT and LICENSE-APACHE accompany the shipped components;
+  AEGIS-PATCH.md records the local changes.
+* Rustls and Quinn, governed by the versions and license expressions in the
+  selected Cargo.lock/dependency distribution. Preserve their license texts.
+* AWS-LC and BoringSSL-derived inputs, including their applicable third-party
+  copyright, license and patent notices. The complete notices must be collected
+  from the exact source/build inputs shipped in a release.
+* ring 0.17.14 declares Apache-2.0 AND ISC. Its source LICENSE indexes
+  LICENSE-other-bits, LICENSE-BoringSSL, and the once_cell Apache/MIT notices.
+  Preserve those exact inputs when this dependency is distributed; do not
+  substitute a historical generic ring license expression.
+* scripts/tests/fixtures/dracut-057 retains upstream GPLv2 and LGPLv2.1
+  notices in COPYING and lgpl-2.1.txt and the original per-file markers.
+  These are public source test fixtures, not the authored workspace license
+  and not a claim of GPL/LGPL licensing for the AEGIS Rust runtime.
+* The optional Windows Wintun 0.14.1 DLL is obtained separately by
+  tools/windows/fetch-wintun.ps1 with pinned archive, architecture-specific DLL,
+  and LICENSE.txt hashes. The upstream binary distribution's LICENSE.txt
+  governs that DLL; Rust crate metadata does not cover its redistribution.
+  Source and prebuilt-driver licenses must not be assumed interchangeable.
+* The optional VP8 Rust FFI component env-libvpx-sys 5.1.3 is MPL-2.0.
+  Its 26 published source files are used without source modifications. The
+  source package is available under MPL-2.0 at:
+  https://static.crates.io/crates/env-libvpx-sys/env-libvpx-sys-5.1.3.crate
+  SHA-256: 26ecdc636a02003406cc821aa9d703c888a966a3fd9bbdae9f7cf27d71720147
+  Browsable source: https://docs.rs/crate/env-libvpx-sys/5.1.3/source/
+  Preserve the full MPL-2.0 text included in THIRD-PARTY-NOTICES. This binding
+  component is separate from libvpx itself, whose BSD license ships as
+  LICENSE-LIBVPX in the optional macOS application.
+
+This is an attribution index, not a claim that every binary distribution has
+complete dependency notices or a successful dependency-license audit. Release
+packaging notice coverage remains an explicit acceptance requirement.

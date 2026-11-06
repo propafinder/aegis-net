@@ -1,0 +1,17 @@
+{
+  "/etc/default/ufw": "07db07bb07e5ac1388707b7c59dabfbce8ad06d5001236248fbf3f93b79c2ed7",
+  "/etc/ufw/after.init": "1354ecc09be8b68eeb5d1d7b5f00af90bcbc6f53535b591546a6b4652ff5d807",
+  "/etc/ufw/before.init": "a1936d13aadea73df4a8d91dfed3c0433467ab9da1c4f344a308c36e6a0559cf",
+  "/etc/ufw/sysctl.conf": "df05de02ea325b3c6d0d22c06c3dc7ebaf3a4e06e41fb98a0671b430b7da5b7f",
+  "/usr/lib/python3/dist-packages/ufw/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "/usr/lib/python3/dist-packages/ufw/applications.py": "c309cc855849b4505551c5211a5b3f7349d1f26a376f8ed0dd72b2bc4779f264",
+  "/usr/lib/python3/dist-packages/ufw/backend.py": "24a372164947a8a3808b8797db49430d285f6ec1113f2c2895e403a058689232",
+  "/usr/lib/python3/dist-packages/ufw/backend_iptables.py": "69cabdd144d3feef41910ac44fd79dde9fd518aa2c9eb8d9e6a7800c4661fc55",
+  "/usr/lib/python3/dist-packages/ufw/common.py": "3eacf4b886260b0a9b1f9b74986fd6fcba3e0e90afed38c01db30736cce41728",
+  "/usr/lib/python3/dist-packages/ufw/frontend.py": "c61d78d719778acf01314b222078db152fbfb45b2f9de66f3df51be45868d7eb",
+  "/usr/lib/python3/dist-packages/ufw/parser.py": "db8d0769467fb4af3fd843980bf19dd82d55161e1986e8ae4723a5ae81f62d0b",
+  "/usr/lib/python3/dist-packages/ufw/util.py": "7bb332974f8caf4322b6246c51fc72af6b6ff67ad18ce62b4735dc762e9dd6cc",
+  "/usr/lib/systemd/system/ufw.service": "efece4d41e747407ed7a02d217420cef9aa60ee84326a145de528400dc63419d",
+  "/usr/lib/ufw/ufw-init": "c98f19dd0a68e94f729acdcba34fe48244dbfacdfa8943f257215d2ae351f80a",
+  "/usr/lib/ufw/ufw-init-functions": "5865fbffc0c644d97e5fc6906c648ce6e4f23710ea0ff57c573ed680999d2cc4"
+}

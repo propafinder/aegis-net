@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT="${ROOT}/scripts/run-geneva-hybrid-relay-live.sh"
+
+[[ -x "${SCRIPT}" ]]
+bash -n "${SCRIPT}"
+grep -Fq -- 'external_classifier_hard_block' "${SCRIPT}"
+grep -Fq -- 'direct_capability_unavailable' "${SCRIPT}"
+grep -Fq -- 'ipv6_relay_policy' "${SCRIPT}"
+grep -Fq -- 'relay_unavailable_fail_closed' "${SCRIPT}"
+grep -Fq -- 'masque_udp_ipv4' "${SCRIPT}"
+grep -Fq -- 'masque_udp_ipv6' "${SCRIPT}"
+grep -Fq -- '--relay-server' "${SCRIPT}"
+grep -Fq -- '--auth-token-config' "${SCRIPT}"
+grep -Fq -- 'wanted_section = None if auth_token_path else "relay"' "${SCRIPT}"
+grep -Fq -- 'section == wanted_section' "${SCRIPT}"
+! grep -Fq -- 'auth_match = re.search' "${SCRIPT}"
+grep -Fq -- '--bounding-set=-all' "${SCRIPT}"
+grep -Fq -- 'transport_priority = ["grpc_stream"]' "${SCRIPT}"
+grep -Fq -- 'udp_transport_priority = ["masque_derived", "grpc_datagram"]' "${SCRIPT}"
+grep -Fq -- 'auth token leaked into' "${SCRIPT}"
+grep -Fq -- 'rm -rf -- "${work_dir}"' "${SCRIPT}"
+grep -Fq -- 'geneva_direct_attempt_started' "${SCRIPT}"
+grep -Fq -- 'direct_relay_handoff_succeeded' "${SCRIPT}"
+grep -Fq -- 'UDP ASSOCIATE' "${SCRIPT}"
+grep -Fq -- 'dns_response_verified' "${SCRIPT}"
+grep -Fq -- 'transport") == "MasqueDerived"' "${SCRIPT}"
+grep -Fq -- 'wait_for_event' "${SCRIPT}"
+grep -Fq -- "--http1.1 --header 'Connection: close'" "${SCRIPT}"
+grep -Fq -- "ipv4_target='http://1.1.1.1/cdn-cgi/trace'" "${SCRIPT}"
+! grep -Fq -- "ipv4_target='https://1.1.1.1/cdn-cgi/trace'" "${SCRIPT}"
+grep -Fq -- 'AlmaLinux 9 curl 7.76 TLS' "${SCRIPT}"
+grep -Fq -- 'cd "${OUT_DIR}"' "${SCRIPT}"
+grep -Fq -- 'sha256sum *-events.jsonl *-result.json result.json >sha256sums.txt' "${SCRIPT}"
+
+echo "PASS: Geneva hybrid relay live contract"

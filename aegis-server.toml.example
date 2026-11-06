@@ -1,0 +1,55 @@
+listen = "0.0.0.0:8443"
+cert = "certs/server.pem"
+key = "certs/server-key.pem"
+auth_token = "change-me"
+# Time-bounded compatibility only during a staged migration. Never copy an old
+# credential to relays that did not historically accept it.
+# [[legacy_auth_tokens]]
+# id = "legacy-direct-2026-08"
+# auth_token = "old-secret-for-this-relay-group-only"
+# not_after_unix_secs = 1787875199
+# process_alias = "netd-relay"
+fallback = "close"
+
+[logging]
+# Default false. Enable only for an explicitly controlled diagnostic window;
+# this can include peer addresses and request error details in server logs.
+# RUST_LOG changes severity selection only and cannot enable this context.
+include_sensitive_context = false
+
+[rate_limit]
+# Forwarded identity is ignored unless the socket peer is in this explicit
+# allowlist. Keep empty for direct listeners. For a Cloudflare-only origin,
+# populate from the current official Cloudflare IPv4/IPv6 ranges and firewall
+# the origin so only those ranges reach TCP/443.
+trusted_proxy_cidrs = []
+forwarded_ip_header = "cf-connecting-ip"
+
+# Default shared-relay egress blocks loopback, RFC1918/ULA, link-local,
+# metadata, benchmark/documentation, multicast and reserved addresses after
+# DNS resolution. A trusted single-tenant VPN that intentionally needs LAN
+# access must opt in with profile = "full_vpn_egress".
+[target_policy]
+profile = "public_internet"
+# Empty permits any non-zero public destination port.
+allowed_ports = []
+
+[transport]
+websocket_path = "/socket"
+websocket_path_pool = ["/ws", "/realtime/connect", "/aegis/ws"]
+grpc_path = "/rpc.Tunnel/Open"
+grpc_path_pool = ["/cdn.tunnel.v1.Session/Open", "/grpc.gateway.v1.Proxy/Connect", "/aegis.tunnel.v1.TunnelService/Open"]
+masque_path = "/.well-known/masque/udp"
+masque_path_pool = ["/.well-known/masque/connect-udp", "/masque/v1/udp", "/relay/datagram"]
+# quic_listen = "0.0.0.0:8443"  # UDP ingress for QUIC TCP path + HTTP/3 CONNECT-UDP
+# Default is fail-closed startup for the combined TCP/QUIC service. Only an
+# explicitly TCP-only-capable deployment should set this false; it does not
+# make a missing QUIC listener or UDP delivery healthy.
+quic_required = true
+quic_keep_alive_interval_ms = 10000 # keep idle MASQUE sessions alive; set 0 to disable keepalive
+quic_max_idle_timeout_ms = 120000 # must stay above keep_alive_interval; set 0 to disable idle timeout entirely
+
+[limits]
+# SIGTERM and SIGINT stop new accepts and drain existing sessions up to this
+# deadline; any remaining owned session tasks are then cancelled.
+shutdown_grace_ms = 30000

@@ -1,0 +1,19 @@
+--- a/src/frame/priority.rs
++++ b/src/frame/priority.rs
+@@ -69,4 +69,16 @@
+     pub fn dependency_id(&self) -> StreamId {
+         self.dependency_id
+     }
++
++    /// Five octets carried in a HEADERS frame when the PRIORITY flag is set.
++    pub(crate) fn headers_prefix(&self) -> [u8; 5] {
++        let mut value = u32::from(self.dependency_id);
++        if self.is_exclusive {
++            value |= 0x8000_0000;
++        }
++        let mut out = [0u8; 5];
++        out[..4].copy_from_slice(&value.to_be_bytes());
++        out[4] = self.weight;
++        out
++    }
+ }

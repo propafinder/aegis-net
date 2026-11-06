@@ -1,0 +1,20 @@
+[Unit]
+Description=Require the live Aegis server to acknowledge its current device policy
+After=aegis-server.service
+
+[Service]
+Type=oneshot
+User=root
+Group=aegis
+UMask=0077
+ExecStart=/usr/local/bin/aegis-server device-policy health --config /etc/aegis-device-policy/sync.json
+TimeoutStartSec=15
+TimeoutStopSec=5
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX

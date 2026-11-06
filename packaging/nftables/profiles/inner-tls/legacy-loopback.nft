@@ -1,0 +1,1 @@
+insert rule inet aegis_origin_guard input iifname "lo" ip saddr 127.0.0.1 tcp dport 443 accept comment "aegis-v3-local-legacy"

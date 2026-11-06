@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AEGIS — контролируемая бета</title>
+<meta name="description" content="AEGIS — клиент и релей для контролируемого доступа из ограниченных сетей. Закрытая бета для согласованных тестовых устройств." />
+<!-- Favicon: glowing owl-A emblem -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23050a14'/%3E%3Cg fill='none' stroke='%2354d6ff' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='32' cy='32' r='22' opacity='.35'/%3E%3Ccircle cx='24' cy='25' r='5'/%3E%3Ccircle cx='40' cy='25' r='5'/%3E%3Ccircle cx='24' cy='25' r='1.6' fill='%2354d6ff'/%3E%3Ccircle cx='40' cy='25' r='1.6' fill='%2354d6ff'/%3E%3Cpath d='M16 22c-5 2-8 7-7 13M48 22c5 2 8 7 7 13'/%3E%3Cpath d='M26 34l6 12 6-12'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#03060e; --bg2:#05091a; --panel:rgba(12,20,38,.55); --panel-line:rgba(90,150,220,.16);
+  --cyan:#54d6ff; --cyan-soft:#8fe3ff; --cyan-deep:#1f8fd6; --ink:#cfe3f5; --muted:#7e93ad;
+  --glow:0 0 18px rgba(84,214,255,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Rajdhani',system-ui,sans-serif; font-weight:400;
+  overflow-x:hidden; line-height:1.5; letter-spacing:.3px;
+}
+#bgfx{position:fixed; inset:0; z-index:0; pointer-events:none}
+.wrap{position:relative; z-index:2; max-width:1180px; margin:0 auto; padding:0 28px}
+h1,h2,h3,.ff{font-family:'Orbitron',sans-serif}
+.kicker{font-family:'Orbitron',sans-serif; font-size:12px; letter-spacing:5px; color:var(--cyan);
+  text-transform:uppercase; opacity:.85; margin-bottom:14px}
+.cyan{color:var(--cyan)}
+.btn{font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:2px; text-transform:uppercase;
+  padding:14px 26px; border-radius:10px; cursor:pointer; border:1px solid rgba(120,190,255,.35);
+  background:transparent; color:var(--ink); display:inline-flex; gap:10px; align-items:center;
+  transition:.3s; text-decoration:none}
+.btn:hover{border-color:var(--cyan); box-shadow:var(--glow); color:#fff; transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(135deg,rgba(40,140,210,.55),rgba(20,70,130,.35));
+  border-color:rgba(120,200,255,.55); box-shadow:0 0 22px rgba(40,150,230,.35) inset,0 0 16px rgba(40,150,230,.25)}
+.btn.primary:hover{box-shadow:0 0 30px rgba(84,214,255,.5)}
+
+/* NAV */
+nav{position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center;
+  justify-content:space-between; padding:18px 40px; transition:.4s;
+  border-bottom:1px solid transparent}
+nav.scrolled{background:rgba(4,8,18,.82); backdrop-filter:blur(14px); border-bottom-color:var(--panel-line); padding:12px 40px}
+.brand{display:flex; align-items:center; gap:14px}
+.brand .logo{width:42px; height:42px}
+.brand .word{font-family:'Orbitron',sans-serif; font-weight:900; letter-spacing:7px; font-size:20px}
+.navlinks{display:flex; gap:30px; list-style:none}
+.navlinks a{color:var(--muted); text-decoration:none; font-family:'Orbitron',sans-serif;
+  font-size:12px; letter-spacing:2px; padding:6px 0; position:relative; transition:.25s}
+.navlinks a:hover,.navlinks a.active{color:#fff}
+.navlinks a::after{content:''; position:absolute; left:0; bottom:-2px; height:2px; width:0;
+  background:var(--cyan); box-shadow:var(--glow); transition:.3s}
+.navlinks a:hover::after,.navlinks a.active::after{width:100%}
+.nav-cta{font-size:12px; padding:11px 20px}
+.burger{display:none; flex-direction:column; gap:5px; cursor:pointer}
+.burger span{width:24px; height:2px; background:var(--ink)}
+
+/* HERO */
+header{position:relative; min-height:100vh; display:flex; align-items:center; padding:120px 0 60px}
+.hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:30px; align-items:center; width:100%}
+.hero-title{font-weight:900; font-size:clamp(48px,8vw,104px); letter-spacing:14px; line-height:.95;
+  background:linear-gradient(180deg,#fff,#9cc6e6); -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 24px rgba(84,214,255,.25))}
+.hero-sub{font-family:'Orbitron',sans-serif; letter-spacing:7px; font-size:clamp(11px,1.5vw,15px);
+  color:var(--cyan-soft); margin-top:10px}
+.hero-h2{font-family:'Orbitron',sans-serif; font-weight:500; font-size:clamp(20px,2.4vw,30px);
+  margin:34px 0 18px; line-height:1.25; color:#eaf4ff}
+.hero-p{max-width:430px; color:var(--muted); font-size:17px; line-height:1.65}
+.hero-cta{display:flex; gap:16px; margin-top:32px; flex-wrap:wrap}
+.hero-deco{position:absolute; left:-40px; top:34%; width:6px; height:120px;
+  background:linear-gradient(var(--cyan),transparent); box-shadow:var(--glow)}
+
+/* EMBLEM */
+.emblem{position:relative; width:min(520px,46vw); aspect-ratio:1; margin:0 auto;
+  display:grid; place-items:center}
+.emblem .ring{position:absolute; inset:0; display:grid; place-items:center}
+.emblem .ring svg{width:100%; height:100%; overflow:visible}
+.spin-cw{animation:spin 38s linear infinite}
+.spin-ccw{animation:spin 60s linear infinite reverse}
+.spin-cw2{animation:spin 90s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.owl-core{position:relative; width:62%; filter:drop-shadow(0 0 26px rgba(84,214,255,.45))}
+.owl-core svg{width:100%; height:auto; overflow:visible}
+.pulse-halo{position:absolute; width:78%; aspect-ratio:1; border-radius:50%;
+  background:radial-gradient(circle,rgba(84,214,255,.16),transparent 62%); animation:breathe 4.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.92);opacity:.6}50%{transform:scale(1.06);opacity:1}}
+.eye-glow{animation:eyeflick 5s ease-in-out infinite}
+@keyframes eyeflick{0%,92%,100%{opacity:1}94%{opacity:.25}96%{opacity:1}}
+
+/* STATS */
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin:30px 0 0;
+  border:1px solid var(--panel-line); border-radius:16px; background:var(--panel); backdrop-filter:blur(6px); overflow:hidden}
+.stat{display:flex; gap:16px; align-items:center; padding:26px 24px; position:relative}
+.stat+.stat::before{content:''; position:absolute; left:0; top:18%; height:64%; width:1px; background:var(--panel-line)}
+.stat .ic{width:42px; height:42px; color:var(--cyan); flex:none}
+.stat .num{font-family:'Orbitron',sans-serif; font-weight:700; font-size:26px; color:#fff; line-height:1}
+.stat .lbl{font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:6px; text-transform:uppercase}
+
+/* SECTIONS */
+section{position:relative; padding:90px 0}
+.sec-head{text-align:center; margin-bottom:50px}
+.sec-title{font-weight:700; font-size:clamp(26px,3.4vw,42px); letter-spacing:4px; color:#fff}
+.sec-lead{color:var(--muted); max-width:680px; margin:16px auto 0; font-size:17px}
+
+.about{display:grid; grid-template-columns:1fr 1fr; gap:50px; align-items:center}
+.map-box{position:relative; border:1px solid var(--panel-line); border-radius:18px;
+  background:radial-gradient(circle at 50% 40%,rgba(20,60,110,.25),rgba(5,9,22,.4)); overflow:hidden; min-height:330px}
+.map-box svg{width:100%; height:100%; display:block}
+.about h3{font-weight:700; font-size:clamp(22px,2.6vw,32px); letter-spacing:2px; color:#fff; line-height:1.2}
+.about p.lead{color:#b9cde0; margin:18px 0 28px; font-size:17px}
+.pillars{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+.pillar .pic{width:40px; height:40px; color:var(--cyan); margin-bottom:10px}
+.pillar h4{font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:2px; color:#fff; margin-bottom:8px}
+.pillar p{font-size:13.5px; color:var(--muted); line-height:1.5}
+
+/* ENGINE CARDS */
+.cards-row{display:flex; align-items:stretch; gap:18px}
+.cards-track{display:grid; grid-template-columns:repeat(5,1fr); gap:18px; flex:1}
+.ecard{border:1px solid var(--panel-line); border-radius:16px; background:var(--panel); backdrop-filter:blur(6px);
+  padding:30px 22px; text-align:center; transition:.35s; position:relative; overflow:hidden}
+.ecard::before{content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 0,rgba(84,214,255,.12),transparent 60%); opacity:0; transition:.35s}
+.ecard:hover{transform:translateY(-8px); border-color:rgba(84,214,255,.45); box-shadow:0 18px 50px rgba(0,40,90,.4)}
+.ecard:hover::before{opacity:1}
+.ecard .eic{width:54px; height:54px; color:var(--cyan); margin:0 auto 18px; transition:.35s}
+.ecard:hover .eic{filter:drop-shadow(var(--glow))}
+.ecard h4{font-family:'Orbitron',sans-serif; font-size:14px; letter-spacing:2px; color:#fff; margin-bottom:12px}
+.ecard p{font-size:13.5px; color:var(--muted); line-height:1.55}
+.carrow{width:46px; flex:none; border:1px solid var(--panel-line); border-radius:12px; background:var(--panel);
+  color:var(--cyan); font-size:20px; cursor:pointer; display:grid; place-items:center; transition:.3s}
+.carrow:hover{border-color:var(--cyan); box-shadow:var(--glow)}
+
+/* GOAL */
+.goal{display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--panel-line);
+  border-radius:20px; overflow:hidden; background:var(--panel)}
+.goal .txt{padding:54px 46px}
+.goal h2{font-weight:700; font-size:clamp(24px,3vw,38px); letter-spacing:3px; color:#fff; line-height:1.15; margin-bottom:20px}
+.goal p{color:#b9cde0; font-size:16.5px; line-height:1.7}
+.goal .art{position:relative; min-height:340px; background:
+  radial-gradient(ellipse at 60% 100%,rgba(90,170,255,.35),transparent 55%),
+  linear-gradient(180deg,#040813,#0a1428); overflow:hidden}
+.goal .beam{position:absolute; left:58%; bottom:0; width:3px; height:80%; transform:translateX(-50%);
+  background:linear-gradient(transparent,var(--cyan-soft)); box-shadow:0 0 40px 8px rgba(84,214,255,.5); animation:beam 3.5s ease-in-out infinite}
+@keyframes beam{0%,100%{opacity:.55;height:70%}50%{opacity:1;height:86%}}
+.skyline{position:absolute; bottom:0; left:0; right:0; height:46%; opacity:.6}
+.skyline rect{fill:#08111f; stroke:rgba(84,214,255,.18); stroke-width:.5}
+
+/* CTA + FOOTER */
+.cta-band{display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+  border:1px solid var(--panel-line); border-radius:18px; padding:38px 44px; margin:30px 0;
+  background:linear-gradient(120deg,rgba(15,30,60,.6),rgba(8,14,30,.4)); position:relative; overflow:hidden}
+.cta-band h3{font-weight:700; font-size:clamp(18px,2.2vw,26px); letter-spacing:2px; color:#fff}
+.cta-band p{color:var(--muted); margin-top:8px}
+footer{border-top:1px solid var(--panel-line); padding:34px 0; margin-top:40px}
+.foot{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px}
+.foot .brand .word{font-size:18px}
+.foot .copy{color:var(--muted); font-size:13px}
+.socials{display:flex; gap:16px}
+.socials a{width:38px; height:38px; border:1px solid var(--panel-line); border-radius:9px; color:var(--muted);
+  display:grid; place-items:center; transition:.3s; text-decoration:none}
+.socials a:hover{color:var(--cyan); border-color:var(--cyan); box-shadow:var(--glow); transform:translateY(-3px)}
+
+/* reveal */
+.reveal{opacity:0; transform:translateY(34px); transition:.8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1; transform:none}
+
+@media(max-width:880px){
+  .navlinks,.nav-cta{display:none}
+  .burger{display:flex}
+  .hero-grid,.about,.goal{grid-template-columns:1fr}
+  .emblem{width:min(440px,80vw); margin-top:30px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(3)::before{display:none}
+  .cards-track{grid-auto-flow:column; grid-auto-columns:78%; grid-template-columns:none;
+    overflow-x:auto; scroll-snap-type:x mandatory}
+  .ecard{scroll-snap-align:center}
+  .goal .art{min-height:220px}
+}
+</style>
+</head>
+<body>
+<canvas id="bgfx"></canvas>
+
+<!-- reusable owl symbol -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="owlGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bdecff"/><stop offset="1" stop-color="#3aa9ea"/>
+    </linearGradient>
+    <symbol id="owl" viewBox="0 0 200 200">
+      <g fill="none" stroke="url(#owlGrad)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <!-- wings -->
+        <path d="M96 70 C70 60 40 60 18 78 C40 74 56 80 66 92 C44 92 30 102 22 120 C44 110 60 112 72 122 C54 126 44 138 40 154 C60 138 78 132 96 134"/>
+        <path d="M104 70 C130 60 160 60 182 78 C160 74 144 80 134 92 C156 92 170 102 178 120 C156 110 140 112 128 122 C146 126 156 138 160 154 C140 138 122 132 104 134"/>
+        <!-- head crown -->
+        <path d="M78 52 C84 40 92 36 100 36 C108 36 116 40 122 52"/>
+        <!-- eyes -->
+        <circle cx="84" cy="64" r="13"/><circle cx="116" cy="64" r="13"/>
+        <circle class="eye-glow" cx="84" cy="64" r="4.6" fill="#7fe4ff" stroke="none"/>
+        <circle class="eye-glow" cx="116" cy="64" r="4.6" fill="#7fe4ff" stroke="none"/>
+        <!-- beak -->
+        <path d="M100 74 l-5 9 h10 z"/>
+        <!-- body + central A -->
+        <path d="M76 96 C76 130 84 158 100 170 C116 158 124 130 124 96"/>
+        <path d="M100 104 l-13 44 M100 104 l13 44 M92 134 h16"/>
+        <!-- talons -->
+        <path d="M88 168 c-2 8 -6 12 -12 13 M100 172 v14 M112 168 c2 8 6 12 12 13"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- NAV -->
+<nav id="nav">
+  <a class="brand" href="#home" style="text-decoration:none;color:inherit">
+    <svg class="logo" viewBox="0 0 200 200"><use href="#owl"/></svg>
+    <span class="word">AEGIS</span>
+  </a>
+  <ul class="navlinks">
+    <li><a class="active" href="#home">HOME</a></li>
+    <li><a href="#features">FEATURES</a></li>
+    <li><a href="#technology">TECHNOLOGY</a></li>
+    <li><a href="#about">ABOUT</a></li>
+    <li><a href="#docs">DOCS</a></li>
+    <li><a href="#contact">CONTACT</a></li>
+  </ul>
+  <a href="#beta-access" class="btn nav-cta">Beta access ↓</a>
+  <div class="burger" onclick="document.querySelector('.navlinks').classList.toggle('open')"><span></span><span></span><span></span></div>
+</nav>
+
+<!-- HERO -->
+<header id="home">
+  <div class="hero-deco"></div>
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <h1 class="hero-title">AEGIS</h1>
+        <div class="hero-sub">КОНТРОЛИРУЕМАЯ&nbsp;&nbsp;БЕТА</div>
+        <h2 class="hero-h2">Контролируемый доступ<br/>из ограниченных сетей</h2>
+        <p class="hero-p">AEGIS — клиент и релей с аутентификацией устройств, явным выбором маршрута и отдельными экспериментальными профилями. Linux — основная платформа закрытой беты. Установочные материалы и доступ выдаются приватно для согласованных тестовых устройств; приемка зависит от конкретного пакета и сети.</p>
+        <div class="hero-cta">
+          <a href="#beta-access" class="btn primary">Условия беты ↓</a>
+          <a href="#about" class="btn">Learn More ›</a>
+        </div>
+      </div>
+      <div class="emblem">
+        <div class="pulse-halo"></div>
+        <!-- rotating HUD rings -->
+        <div class="ring spin-ccw"><svg viewBox="0 0 200 200"><g fill="none" stroke="#2f6f9e" stroke-width="1"><circle cx="100" cy="100" r="96" stroke-dasharray="2 8" opacity=".7"/></g></svg></div>
+        <div class="ring spin-cw"><svg viewBox="0 0 200 200"><g fill="none" stroke="#54d6ff" stroke-width="1.1" opacity=".55"><circle cx="100" cy="100" r="84" stroke-dasharray="40 18 6 18"/></g>
+          <g fill="#54d6ff"><circle cx="100" cy="16" r="2.4"/><circle cx="184" cy="100" r="2.4"/><circle cx="100" cy="184" r="2.4"/><circle cx="16" cy="100" r="2.4"/></g></svg></div>
+        <div class="ring spin-cw2"><svg viewBox="0 0 200 200"><g fill="none" stroke="#1f8fd6" stroke-width="1" opacity=".4"><circle cx="100" cy="100" r="72" stroke-dasharray="3 6"/><circle cx="100" cy="100" r="60"/></g></svg></div>
+        <div class="owl-core"><svg viewBox="0 0 200 200"><use href="#owl"/></svg></div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats reveal">
+      <div class="stat"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg><div><div class="num">Beta</div><div class="lbl">Приватный доступ</div></div></div>
+      <div class="stat"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg><div><div class="num">Linux</div><div class="lbl">Основная платформа</div></div></div>
+      <div class="stat"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><div><div class="num">Dev</div><div class="lbl">Windows — разработка</div></div></div>
+      <div class="stat"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M7.7 7.4l3 8M16.3 7.4l-3 8M8 6h8"/></svg><div><div class="num ff">Open</div><div class="lbl">Приемка остается открытой</div></div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="wrap about">
+    <div class="map-box reveal" id="mapBox"></div>
+    <div class="reveal">
+      <div class="kicker">кто мы</div>
+      <h3>РАЗРАБОТКА.<br/><span class="cyan">ПРОВЕРЯЕМЫЕ ГРАНИЦЫ.</span></h3>
+      <p class="lead">Проект исследует доступ из ограниченных сетей. Реализованные функции, результаты отдельных испытаний и приемка на установленном устройстве описываются раздельно. Готовность стабильного выпуска пока не подтверждена.</p>
+      <div class="pillars">
+        <div class="pillar">
+          <svg class="pic" viewBox="0 0 200 200"><use href="#owl"/></svg>
+          <h4>АДАПТАЦИЯ</h4><p>Выбор из настроенных маршрутов учитывает прогресс соединения и сигналы отказа.</p>
+        </div>
+        <div class="pillar">
+          <svg class="pic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h4>АУТЕНТИФИКАЦИЯ</h4><p>Профиль с регистрацией устройства сохраняет отдельное доверие к релею. AEGIS не является системой анонимности.</p>
+        </div>
+        <div class="pillar">
+          <svg class="pic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg>
+          <h4>ПРОВЕРКА</h4><p>Результат испытания относится к своему пакету, устройству и сети. Универсальный обход блокировок не заявлен.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES / ENGINES -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">что мы делаем</div>
+      <h2 class="sec-title">ФУНКЦИИ И ИХ ГРАНИЦЫ</h2>
+      <p class="sec-lead">Профиль подключения выбирается явно. Наличие реализации и локальных проверок еще не означает приемку в целевой сети.</p>
+    </div>
+    <div class="cards-row reveal">
+      <button class="carrow" id="prev">‹</button>
+      <div class="cards-track" id="track">
+        <div class="ecard">
+          <svg class="eic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="5" cy="12" r="2.2"/><circle cx="19" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7 12l10-6M7 12l10 6"/></svg>
+          <h4>WIDE / INGRESS</h4><p>SOCKS и отдельные системные профили захвата. Охват DNS, UDP и приложений проверяется для каждого установленного пакета.</p>
+        </div>
+        <div class="ecard">
+          <svg class="eic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+          <h4>DIRECT / GENEVA</h4><p>Явно включаемые эксперименты IPv4 TCP. Прямой маршрут раскрывает IP назначения; приемки против реального DPI нет.</p>
+        </div>
+        <div class="ecard">
+          <svg class="eic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="6" cy="12" rx="2.4" ry="7"/><path d="M6 5h12M6 19h12"/><ellipse cx="18" cy="12" rx="2.4" ry="7"/></svg>
+          <h4>RELAY TRANSPORT</h4><p>Fronted gRPC и отдельный канал устройства. Legacy MASQUE использует прямой QUIC/HTTP/3 и раскрывает IP релея.</p>
+        </div>
+        <div class="ecard">
+          <svg class="eic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V4a3 3 0 0 0-3 0z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg>
+          <h4>BRAIN</h4><p>Оценка исходов, выбор маршрута и восстановление. Живая история маршрутов по умолчанию хранится в памяти.</p>
+        </div>
+        <div class="ecard">
+          <svg class="eic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 5-7"/></svg>
+          <h4>ДИАГНОСТИКА</h4><p>Локальные сигналы прогресса и отказа. Пересылка пользовательской телеметрии как функция продукта не заявлена.</p>
+        </div>
+      </div>
+      <button class="carrow" id="next">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- GOAL -->
+<section id="technology">
+  <div class="wrap">
+    <div class="goal reveal">
+      <div class="txt">
+        <div class="kicker">наша цель</div>
+        <h2>ИНТЕРНЕТ ДОЛЖЕН<br/>БЫТЬ <span class="cyan">СВОБОДНЫМ</span></h2>
+        <p>Цензура, блокировки и слежка не должны определять наше будущее. Мы создаём инструменты, которые возвращают контроль пользователю. Потому что знание — это сила. А доступ к информации — это право.</p>
+      </div>
+      <div class="art">
+        <svg class="skyline" viewBox="0 0 400 120" preserveAspectRatio="none">
+          <rect x="20" y="60" width="22" height="60"/><rect x="50" y="40" width="26" height="80"/>
+          <rect x="84" y="74" width="18" height="46"/><rect x="110" y="30" width="30" height="90"/>
+          <rect x="150" y="56" width="20" height="64"/><rect x="178" y="20" width="34" height="100"/>
+          <rect x="220" y="48" width="24" height="72"/><rect x="252" y="66" width="18" height="54"/>
+          <rect x="278" y="36" width="30" height="84"/><rect x="316" y="58" width="22" height="62"/>
+          <rect x="346" y="44" width="28" height="76"/>
+        </svg>
+        <div class="beam"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="beta-access" style="padding-top:20px">
+  <div class="wrap">
+    <div class="cta-band reveal">
+      <div>
+        <h3>УЧАСТИЕ В КОНТРОЛИРУЕМОЙ БЕТЕ</h3>
+        <p>Для согласованного тестового устройства получите материалы установки и доступа через аутентифицированный приватный канал. Проверьте подпись пакета и выберите документированный профиль для этого устройства.</p>
+      </div>
+      <a href="../README.md" class="btn primary">Описание и статус проекта ›</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="contact">
+  <div class="wrap foot">
+    <div class="brand">
+      <svg class="logo" style="width:38px;height:38px" viewBox="0 0 200 200"><use href="#owl"/></svg>
+      <div><div class="word ff" style="font-weight:900;letter-spacing:6px;font-size:18px">AEGIS</div>
+      <div style="font-size:10px;letter-spacing:3px;color:var(--muted)">КОНТРОЛИРУЕМАЯ БЕТА</div></div>
+    </div>
+    <div class="copy">AEGIS · <a href="../LICENSE-MIT">MIT</a> OR <a href="../LICENSE-APACHE">Apache-2.0</a>.<br/><a href="../NOTICE">Уведомления проекта</a></div>
+    <div class="socials" id="docs">
+      <a href="#" title="GitHub"><svg width="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11 11 0 0 1 6 0C17 4.6 18 4.9 18 4.9c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg></a>
+      <a href="#" title="Web"><svg width="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></a>
+      <a href="#" title="X"><svg width="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h3l-7 8 8 12h-6l-5-7-5 7H3l8-9L2 2h6l4 6z"/></svg></a>
+      <a href="#" title="Telegram"><svg width="17" viewBox="0 0 24 24" fill="currentColor"><path d="M22 3 2 11l6 2 2 7 3-4 5 4 4-17zM9 13l9-6-7 7-.3 4z"/></svg></a>
+      <a href="#" title="Instagram"><svg width="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* nav scroll state + active link */
+const nav=document.getElementById('nav');
+addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>40));
+const navlinks=[...document.querySelectorAll('.navlinks a')];
+const secs=navlinks.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+addEventListener('scroll',()=>{
+  let cur=secs[0];
+  for(const s of secs){ if(s.getBoundingClientRect().top<160) cur=s; }
+  navlinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur.id));
+});
+
+/* reveal on scroll */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.15});
+document.querySelectorAll('.reveal').forEach(e=>io.observe(e));
+
+/* count-up stats */
+function countUp(el){
+  const to=+el.dataset.to, comma=el.dataset.comma, suf=el.dataset.suffix||'';
+  let t0=null, dur=1600;
+  const fmt=n=>comma?Math.floor(n).toLocaleString('en-US'):Math.floor(n);
+  function step(ts){t0=t0||ts; const p=Math.min((ts-t0)/dur,1); const e=1-Math.pow(1-p,3);
+    el.textContent=fmt(to*e)+suf; if(p<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
+}
+const statIO=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){document.querySelectorAll('.num[data-to]').forEach(countUp);statIO.disconnect();}}),{threshold:.4});
+statIO.observe(document.querySelector('.stats'));
+
+/* engine cards carousel (mobile / arrow scroll) */
+const track=document.getElementById('track');
+document.getElementById('next').onclick=()=>track.scrollBy({left:track.clientWidth*.6,behavior:'smooth'});
+document.getElementById('prev').onclick=()=>track.scrollBy({left:-track.clientWidth*.6,behavior:'smooth'});
+
+/* ---- particle network background ---- */
+const cv=document.getElementById('bgfx'), cx=cv.getContext('2d');
+let W,H,pts;
+function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;
+  const n=Math.min(110,Math.floor(W*H/16000));
+  pts=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.6+.5}));}
+resize(); addEventListener('resize',resize);
+const mouse={x:-999,y:-999};
+addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+function draw(){
+  cx.clearRect(0,0,W,H);
+  // vignette glow
+  const g=cx.createRadialGradient(W*.7,H*.32,40,W*.7,H*.32,Math.max(W,H)*.6);
+  g.addColorStop(0,'rgba(20,70,130,.16)');g.addColorStop(1,'rgba(3,6,14,0)');
+  cx.fillStyle=g; cx.fillRect(0,0,W,H);
+  for(const p of pts){
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+    cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fillStyle='rgba(120,210,255,.7)';cx.fill();
+  }
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const a=pts[i],b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);
+    if(d<130){cx.strokeStyle='rgba(84,214,255,'+(.16*(1-d/130))+')';cx.lineWidth=.6;
+      cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();}
+  }
+  // mouse links
+  for(const p of pts){const d=Math.hypot(p.x-mouse.x,p.y-mouse.y);
+    if(d<170){cx.strokeStyle='rgba(143,227,255,'+(.4*(1-d/170))+')';cx.lineWidth=.7;
+      cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(mouse.x,mouse.y);cx.stroke();}}
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ---- world map dots + animated arcs ---- */
+(function(){
+  const box=document.getElementById('mapBox');
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox','0 0 600 320'); svg.setAttribute('preserveAspectRatio','xMidYMid slice');
+  // dotted landmass field
+  let dots='';
+  for(let i=0;i<460;i++){
+    const x=Math.random()*600, y=Math.random()*320;
+    // rough continents mask
+    const land=( (x>60&&x<170&&y>60&&y<200) || (x>180&&x<250&&y>120&&y<260) ||
+                 (x>270&&x<340&&y>50&&y<150) || (x>330&&x<470&&y>70&&y<210) ||
+                 (x>430&&x<520&&y>180&&y<270) || (x>300&&x<360&&y>170&&y<250) );
+    if(land&&Math.random()>.35) dots+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="1.3" fill="rgba(90,160,220,.5)"/>`;
+  }
+  const hubs=[[120,120],[210,180],[300,90],[400,130],[470,220],[330,210],[150,90]];
+  let hubsvg=hubs.map(h=>`<circle cx="${h[0]}" cy="${h[1]}" r="3" fill="#7fe4ff"><animate attributeName="r" values="3;6;3" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;.3;1" dur="2.4s" repeatCount="indefinite"/></circle>`).join('');
+  // arcs between hubs
+  let arcs='';
+  const pairs=[[0,2],[2,3],[3,4],[1,5],[6,2],[1,3],[0,6],[5,4]];
+  pairs.forEach((p,i)=>{
+    const a=hubs[p[0]],b=hubs[p[1]];
+    const mx=(a[0]+b[0])/2, my=Math.min(a[1],b[1])-60;
+    const d=`M${a[0]} ${a[1]} Q ${mx} ${my} ${b[0]} ${b[1]}`;
+    arcs+=`<path d="${d}" fill="none" stroke="#54d6ff" stroke-width="1.2" opacity=".55" stroke-dasharray="6 10">
+      <animate attributeName="stroke-dashoffset" from="160" to="0" dur="${2.2+i*0.25}s" repeatCount="indefinite"/></path>`;
+  });
+  svg.innerHTML=dots+arcs+hubsvg;
+  box.appendChild(svg);
+})();
+</script>
+</body>
+</html>

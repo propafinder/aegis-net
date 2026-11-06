@@ -1,0 +1,43 @@
+# Rendered by install.sh during packaged or repo-based installation.
+[Unit]
+Description=AEGIS relay server
+# The relay binds wildcard local sockets and does not need an address/default
+# route before startup. Waiting for network-online can stall boot for 120s on
+# ifupdown hosts that accidentally have systemd-networkd-wait-online enabled.
+# If the optional origin guard is enabled, order the listener after its pinned
+# local nftables policy without pulling the guard onto direct relays.
+After=network.target aegis-origin-guard.service
+Wants=network.target
+# A fresh registry policy may arrive after an extended authority outage.
+# Keep retrying without authorizing clients against expired policy.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+EnvironmentFile=-__AEGIS_SERVER_ENV_FILE__
+WorkingDirectory=__AEGIS_SERVER_STATE_DIR__
+ExecStart=__AEGIS_SERVER_BIN__ --config __AEGIS_SERVER_CONFIG__
+User=__AEGIS_SERVER_USER__
+Group=__AEGIS_SERVER_GROUP__
+Restart=on-failure
+RestartSec=30
+LimitNOFILE=65536
+# Keep the packaged Ubuntu contour writable only where the runtime actually
+# needs it: config stays readable, state/log paths stay writable.
+NoNewPrivileges=true
+UMask=0077
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

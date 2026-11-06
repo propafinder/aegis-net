@@ -1,0 +1,4 @@
+name = "grpc_stream"
+transport = "grpc_stream"
+description = "gRPC stream adversarial dry-run scenario"
+expected_threshold_key = "grpc_stream"

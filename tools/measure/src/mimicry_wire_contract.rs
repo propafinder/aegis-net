@@ -1,0 +1,116 @@
+use std::path::Path;
+
+use serde_json::json;
+
+use crate::artifact::write_json;
+
+pub fn build_mimicry_wire_validation_contract(
+    output: &Path,
+    repo_root: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let payload = json!({
+        "artifact_schema": "wire_mimicry_validation_contract_v1",
+        "scope": "future_packet_wire_linux_only",
+        "stable_userspace_boundary": "pre_connect_socket_only",
+        "first_runtime_slice": "linux_experimental_ipv4_ttl_preface",
+        "expanded_runtime_slice": "linux_experimental_ipv4_ttl_window_preface",
+        "options_runtime_slice": "linux_experimental_ipv4_ttl_window_options_preface",
+        "negotiated_options_runtime_slice": "linux_experimental_ipv4_ttl_window_negotiated_options_preface",
+        "fragment_choreography_runtime_slice": "linux_experimental_ipv4_fragment_ordered_decoy_choreography_preface",
+        "config_path": "direct.wire_mimicry_mode=linux_experimental_ttl_preface",
+        "validation_strategy": "capture_replay_plus_privileged_host_acceptance",
+        "separate_from_release_gate": true,
+        "release_gate_dependency": "none",
+        "host_helper_script": "scripts/validate-mimicry-wire-host.sh",
+        "required_runtime_capability_fields": [
+            "mimicry_capability_wire_stage",
+            "mimicry_capability_wire_scope",
+            "mimicry_capability_wire_requested",
+            "mimicry_capability_wire_active",
+            "mimicry_capability_wire_activation_reason",
+            "mimicry_capability_wire_runtime_slice",
+            "mimicry_capability_wire_ttl_preface",
+            "mimicry_capability_wire_window_preface_ready",
+            "mimicry_capability_wire_window_preface",
+            "mimicry_capability_wire_options_preface_ready",
+            "mimicry_capability_wire_options_preface_profile",
+            "mimicry_capability_wire_options_preface_size",
+            "mimicry_capability_wire_ipv4_header_shaping_ready",
+            "mimicry_capability_wire_ipv4_header_shaping_observed_ready",
+            "mimicry_capability_wire_ipv4_header_shaping_profile",
+            "mimicry_capability_wire_ipv4_header_shaping_tos",
+            "mimicry_capability_wire_ipv4_header_shaping_ip_id",
+            "mimicry_capability_wire_ipv4_header_shaping_dont_fragment",
+            "mimicry_capability_wire_ipv4_header_shaping_source",
+            "mimicry_capability_wire_negotiated_options_ready",
+            "mimicry_capability_wire_negotiated_options_observed_ready",
+            "mimicry_capability_wire_negotiated_options_profile",
+            "mimicry_capability_wire_negotiated_options_size",
+            "mimicry_capability_wire_negotiated_options_mss",
+            "mimicry_capability_wire_negotiated_options_window_scale",
+            "mimicry_capability_wire_negotiated_options_sack_permitted",
+            "mimicry_capability_wire_negotiated_options_timestamp_mode",
+            "mimicry_capability_wire_negotiated_options_source",
+            "mimicry_capability_wire_raw_ipv4_send_ready",
+            "mimicry_capability_wire_tcp_repair_ready",
+            "mimicry_capability_wire_ipv4_header_control_ready",
+            "mimicry_capability_wire_ipv4_fragmentation_ready",
+            "mimicry_capability_wire_fragment_choreography_ready",
+            "mimicry_capability_wire_fragment_choreography_observed_ready",
+            "mimicry_capability_wire_fragment_choreography_profile",
+            "mimicry_capability_wire_fragment_choreography_steps",
+            "mimicry_capability_wire_fragment_choreography_first_payload_len",
+            "mimicry_capability_wire_fragment_choreography_disorder_split_at",
+            "mimicry_capability_wire_fragment_choreography_overlap",
+            "mimicry_capability_wire_fragment_choreography_source",
+        ],
+        "required_runtime_state_matrix": [
+            "requested_false",
+            "requested_true_inactive",
+            "requested_true_active",
+        ],
+        "required_replay_artifacts": [
+            "runtime-events-jsonl",
+            "capture-replay-summary.json",
+        ],
+        "required_host_acceptance_artifacts": [
+            "wire-host-acceptance-summary.json",
+        ],
+        "optional_witness_artifacts": [
+            "wire-witness-summary.json",
+        ],
+        "required_capabilities": [
+            "CAP_NET_RAW",
+            "CAP_NET_ADMIN",
+        ],
+        "required_active_runtime_ready_fields": [
+            "mimicry_capability_wire_raw_ipv4_send_ready",
+            "mimicry_capability_wire_tcp_repair_ready",
+            "mimicry_capability_wire_ipv4_header_control_ready",
+        ],
+        "witness_summary_schema": "wire_mimicry_independent_witness_summary_v1",
+        "witness_correlation_strategy": "target_port_runtime_slice_plus_capture_backed_field_match",
+        "witness_correlation_fields": [
+            "ttl_preface",
+            "window_preface",
+            "ipv4_header_shaping.tos",
+            "ipv4_header_shaping.ip_id",
+            "ipv4_header_shaping.dont_fragment",
+            "negotiated_options.mss",
+            "negotiated_options.window_scale",
+            "negotiated_options.sack_permitted",
+            "negotiated_options.timestamp_mode",
+            "fragment_choreography.first_payload_len",
+            "fragment_choreography.disorder_split_at",
+            "fragment_choreography.overlap",
+        ],
+        "verdict_vocabulary": [
+            "green",
+            "degraded",
+            "red",
+        ],
+        "owner_runbook_hint": repo_root.join("README.md").display().to_string(),
+    });
+    write_json(output, &payload)?;
+    Ok(())
+}

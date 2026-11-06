@@ -1,0 +1,4 @@
+# Placeholder generic middlebox signatures for Phase A2.
+# Real blocking signatures must be reviewed before becoming an acceptance gate.
+
+alert tls any any -> any any (msg:"AEGIS placeholder TLS marker"; sid:4200001; rev:1;)

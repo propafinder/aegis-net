@@ -1,0 +1,10 @@
+region_id: ru
+source_label: seed-ru-dpi-risk
+hard_block_classes: []
+penalties:
+  - target_class: legacy_tls
+    penalty: 0.12
+    reason: generic-static-tls-proxy-risk
+  - target_class: grpc_stream
+    penalty: 0.06
+    reason: uncommon-grpc-consumer-shape-risk

@@ -1,0 +1,14 @@
+# Weekly, off-peak, jittered. Shipped disabled — see the .service for why.
+[Unit]
+Description=Weekly AEGIS external calibration refresh
+
+[Timer]
+OnCalendar=Sun 04:17
+# Without this a fleet installed from the same image measures simultaneously,
+# and every relay sees its whole client population run a witness matrix in the
+# same minute — which is both a load spike and a correlatable signature.
+RandomizedDelaySec=3h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,4 @@
+name = "https_ws"
+transport = "https_ws"
+description = "HTTPS WebSocket adversarial dry-run scenario"
+expected_threshold_key = "https_ws"

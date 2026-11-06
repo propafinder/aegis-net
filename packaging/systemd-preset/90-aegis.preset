@@ -1,0 +1,2 @@
+disable aegis-server.service
+disable aegis-client.service

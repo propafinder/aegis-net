@@ -1,0 +1,43 @@
+{
+  "boot_status_code": "enabled-by-sysvinit",
+  "datasource": "none",
+  "detail": "DataSourceNone",
+  "errors": [],
+  "extended_status": "degraded running",
+  "init": {
+    "errors": [],
+    "finished": 115620.58,
+    "recoverable_errors": {
+      "WARNING": [
+        "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+      ]
+    },
+    "start": 115620.2
+  },
+  "init-local": {
+    "errors": [],
+    "finished": 115620.09,
+    "recoverable_errors": {},
+    "start": 115620.09
+  },
+  "last_update": "Fri, 02 Jan 1970 08:07:00 +0000",
+  "modules-config": {
+    "errors": [],
+    "finished": null,
+    "recoverable_errors": {},
+    "start": null
+  },
+  "modules-final": {
+    "errors": [],
+    "finished": null,
+    "recoverable_errors": {},
+    "start": null
+  },
+  "recoverable_errors": {
+    "WARNING": [
+      "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+    ]
+  },
+  "stage": null,
+  "status": "running"
+}

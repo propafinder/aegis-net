@@ -1,0 +1,1 @@
+[{"type":"local","dst":"fd77:ae91:1::2","from":"::","dev":"lo","table":"local","protocol":"kernel","prefsrc":"fd77:ae91:1::2","metric":0,"flags":[],"pref":"medium"}]

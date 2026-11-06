@@ -1,0 +1,63 @@
+{
+ "base64_encoded_keys": [],
+ "ds": {
+  "_doc": "EXPERIMENTAL: The structure and format of content scoped under the 'ds' key may change in subsequent releases of cloud-init.",
+  "meta_data": {
+   "dsmode": "net",
+   "instance-id": "probe-s1",
+   "local-hostname": "probe-s1"
+  }
+ },
+ "merged_cfg": "redacted for non-root user",
+ "merged_system_cfg": "redacted for non-root user",
+ "sensitive_keys": [
+  "merged_cfg",
+  "merged_system_cfg"
+ ],
+ "sys_info": {
+  "dist": [
+   "ubuntu",
+   "24.04",
+   "noble"
+  ],
+  "platform": "Linux-6.8.0-117-generic-aarch64-with-glibc2.39",
+  "python": "3.12.3",
+  "release": "6.8.0-117-generic",
+  "system": "Linux",
+  "uname": [
+   "Linux",
+   "a90b75076c23",
+   "6.8.0-117-generic",
+   "#117-Ubuntu SMP PREEMPT_DYNAMIC Thu May  7 17:26:37 UTC 2026",
+   "aarch64",
+   "aarch64"
+  ],
+  "variant": "ubuntu"
+ },
+ "v1": {
+  "_beta_keys": [
+   "subplatform"
+  ],
+  "availability-zone": null,
+  "availability_zone": null,
+  "cloud-name": "unknown",
+  "cloud_id": "nocloud",
+  "cloud_name": "unknown",
+  "distro": "ubuntu",
+  "distro_release": "noble",
+  "distro_version": "24.04",
+  "instance-id": "probe-s1",
+  "instance_id": "probe-s1",
+  "kernel_release": "6.8.0-117-generic",
+  "local-hostname": "probe-s1",
+  "local_hostname": "probe-s1",
+  "machine": "aarch64",
+  "platform": "nocloud",
+  "public_ssh_keys": [],
+  "python_version": "3.12.3",
+  "region": null,
+  "subplatform": "seed-dir (/var/lib/cloud/seed/nocloud)",
+  "system_platform": "Linux-6.8.0-117-generic-aarch64-with-glibc2.39",
+  "variant": "ubuntu"
+ }
+}

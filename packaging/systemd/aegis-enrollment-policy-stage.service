@@ -1,0 +1,26 @@
+[Unit]
+Description=Refresh the enrollment-owned policy into a private inherited inbox
+OnSuccess=aegis-enrollment-policy-publish.service
+
+[Service]
+Type=oneshot
+User=aegis-enrollment
+Group=aegis-enrollment
+UMask=0077
+ExecStart=/usr/local/bin/aegis-server device-policy authority-refresh-export --registry /var/lib/aegis-enrollment/registry.json --ttl-secs 900
+# The root service manager opens this precreated file without truncation.
+# Only the Rust writer truncates it after validation under an exclusive lock.
+StandardOutput=file:/var/lib/aegis-device-policy-transfer/snapshot.json
+StandardError=journal
+TimeoutStartSec=20
+TimeoutStopSec=5
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ReadWritePaths=/var/lib/aegis-enrollment /var/lib/aegis-device-policy-transfer/snapshot.json
+InaccessiblePaths=/var/lib/aegis-enrollment/private -/var/lib/aegis-device-authority

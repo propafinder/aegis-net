@@ -1,0 +1,93 @@
+{
+  "boot_status_code": "enabled-by-sysvinit",
+  "datasource": "nocloud",
+  "detail": "DataSourceNoCloud [seed=/dev/loop1]",
+  "errors": [
+    "Not all expected physical devices present: {'52:55:55:00:00:01'}",
+    "Not all expected physical devices present: {'52:55:55:00:00:01'}",
+    "Not all expected physical devices present: {'52:55:55:00:00:01'}",
+    "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+  ],
+  "extended_status": "error - running",
+  "init": {
+    "errors": [
+      "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+    ],
+    "finished": 115612.84,
+    "recoverable_errors": {
+      "ERROR": [
+        "failed stage init-local"
+      ],
+      "WARNING": [
+        "Unable to rename interfaces: [['52:55:55:00:00:01', 'eth0', None, None]] due to errors: ['[nic not present] Cannot rename mac=52:55:55:00:00:01 to eth0, not available.']",
+        "Failed to rename devices: Failed to apply network config names: [nic not present] Cannot rename mac=52:55:55:00:00:01 to eth0, not available.",
+        "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+      ]
+    },
+    "start": 115612.59
+  },
+  "init-local": {
+    "errors": [
+      "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+    ],
+    "finished": 115612.48,
+    "recoverable_errors": {
+      "ERROR": [
+        "failed stage init-local"
+      ],
+      "WARNING": [
+        "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+      ]
+    },
+    "start": 115612.44
+  },
+  "last_update": "Fri, 02 Jan 1970 08:06:52 +0000",
+  "modules-config": {
+    "errors": [
+      "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+    ],
+    "finished": null,
+    "recoverable_errors": {
+      "ERROR": [
+        "failed stage init-local"
+      ],
+      "WARNING": [
+        "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+      ]
+    },
+    "start": null
+  },
+  "modules-final": {
+    "errors": [
+      "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+    ],
+    "finished": null,
+    "recoverable_errors": {
+      "ERROR": [
+        "failed stage init-local"
+      ],
+      "WARNING": [
+        "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+      ]
+    },
+    "start": null
+  },
+  "recoverable_errors": {
+    "ERROR": [
+      "failed stage init-local",
+      "failed stage init-local",
+      "failed stage init-local",
+      "failed stage init-local"
+    ],
+    "WARNING": [
+      "Unable to rename interfaces: [['52:55:55:00:00:01', 'eth0', None, None]] due to errors: ['[nic not present] Cannot rename mac=52:55:55:00:00:01 to eth0, not available.']",
+      "Failed to rename devices: Failed to apply network config names: [nic not present] Cannot rename mac=52:55:55:00:00:01 to eth0, not available.",
+      "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/",
+      "Not all expected physical devices present: {'52:55:55:00:00:01'}",
+      "Not all expected physical devices present: {'52:55:55:00:00:01'}",
+      "Not all expected physical devices present: {'52:55:55:00:00:01'}"
+    ]
+  },
+  "stage": null,
+  "status": "error"
+}

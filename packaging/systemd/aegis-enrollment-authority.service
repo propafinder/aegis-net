@@ -1,0 +1,37 @@
+[Unit]
+Description=Aegis device enrollment authority
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+TimeoutStartSec=45
+User=aegis-enrollment
+Group=aegis-enrollment
+UMask=0077
+StateDirectory=aegis-enrollment
+StateDirectoryMode=0700
+ExecStart=/usr/local/bin/aegis-server enrollment serve --config /etc/aegis-enrollment/authority.toml
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/aegis-enrollment
+
+[Install]
+WantedBy=multi-user.target

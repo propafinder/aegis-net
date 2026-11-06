@@ -1,0 +1,45 @@
+{
+  "candidate": {
+    "source": "REPLACE_WITH_EXACT_40_CHARACTER_GIT_SHA",
+    "binary": "/opt/aegis/REPLACE_WITH_EXACT_CANDIDATE/bin/aegis-server",
+    "binary_sha256": "REPLACE_WITH_EXACT_64_CHARACTER_BINARY_SHA256"
+  },
+  "units": [
+    {"name": "aegis-server-v3.service", "candidate": true, "immutable_pid": true},
+    {"name": "aegis-server.service", "candidate": false, "immutable_pid": true},
+    {"name": "aegis-front-v3.service", "candidate": false, "immutable_pid": true},
+    {"name": "aegis-v3-dispatch.service", "candidate": false, "immutable_pid": false, "allow_zero_pid": true}
+  ],
+  "listeners": [
+    {"protocol": "tcp", "address": "127.0.0.1", "port": 9443},
+    {"protocol": "udp", "address": "127.0.0.1", "port": 9443}
+  ],
+  "semantic_probes": [
+    {
+      "name": "device_policy_health",
+      "argv": [
+        "/opt/aegis/REPLACE_WITH_EXACT_CANDIDATE/bin/aegis-server",
+        "device-policy",
+        "health",
+        "--config",
+        "/etc/aegis-device-policy/sync.json"
+      ],
+      "timeout_seconds": 30,
+      "json_equals": {
+        "acknowledgement": "live_process",
+        "process.build_git": "$CANDIDATE_SOURCE"
+      }
+    }
+  ],
+  "journal_units": [
+    "aegis-server-v3.service",
+    "aegis-server.service",
+    "aegis-front-v3.service",
+    "aegis-v3-dispatch.service"
+  ],
+  "thresholds": {
+    "minimum_duration_seconds": 86400,
+    "minimum_samples": 1400,
+    "maximum_gap_seconds": 180
+  }
+}

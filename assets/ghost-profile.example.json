@@ -1,0 +1,5 @@
+{
+  "ipg_ms": 12.5,
+  "jitter_min_ms": 1,
+  "jitter_max_ms": 8
+}

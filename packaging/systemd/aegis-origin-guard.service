@@ -1,0 +1,18 @@
+[Unit]
+Description=AEGIS origin guard (restrict TCP/UDP :443 to Cloudflare source ranges)
+# The guard loads pinned nftables source ranges and performs no network I/O.
+# Apply it as soon as the basic network stack/nftables are ready, and before a
+# co-started relay opens :443; do not inherit a broken wait-online provider.
+After=network.target nftables.service
+Wants=network.target
+Before=aegis-server.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Apply the guard with a long safety window, then immediately confirm so the
+# auto-rollback timer is a no-op on boot. /run sentinel is cleared each boot,
+# so the unit re-applies cleanly on every start.
+ExecStart=/bin/bash -c "ROLLBACK_SECS=3600 /usr/local/sbin/aegis-origin-guard.sh apply && /usr/local/sbin/aegis-origin-guard.sh confirm"
+ExecStop=/usr/local/sbin/aegis-origin-guard.sh remove
+[Install]
+WantedBy=multi-user.target

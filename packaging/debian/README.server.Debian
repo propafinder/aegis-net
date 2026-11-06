@@ -1,0 +1,10 @@
+AEGIS server Debian packaging notes
+==================================
+
+This package installs the relay-server role only.
+
+It intentionally does not auto-enable `aegis-server.service`.
+Prepare `/etc/default/aegis-server` and `/etc/aegis/server/...`, then enable the
+unit explicitly with:
+
+  systemctl enable --now aegis-server.service

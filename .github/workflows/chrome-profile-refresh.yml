@@ -1,0 +1,127 @@
+name: Chrome profile refresh
+
+# Weekly measurement of Chrome stable. Opens a pull request only when the
+# checked-in profile drifted. Runs only on the schedule and on manual dispatch,
+# never for pushes or pull requests, and uses no repository secrets. The
+# schedule starts only after this file is on the default branch.
+#
+# The measure job installs Chrome and builds crates, so its token is
+# read-only and is not persisted in the checkout. Only the pull-request job can
+# write; it runs git and gh on the two measured files and nothing else.
+# scripts/test-chrome-profile-refresh-safety-contract.sh enforces this split.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: chrome-profile-refresh
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.measure.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Chrome stable
+        run: |
+          wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get update
+          sudo apt-get install -y /tmp/chrome.deb
+
+      - name: Install the pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+
+      - name: Measure Chrome and write the profile on drift
+        id: measure
+        run: |
+          set +e
+          python3 scripts/refresh-chrome-profile.py --require-chrome --write
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          elif [ "$code" -eq 2 ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            exit "$code"
+          fi
+
+      - name: Test the updated profile
+        if: steps.measure.outputs.changed == 'true'
+        run: |
+          cargo test -p aegis-chrome-profile
+          cargo test -p aegis-client --bin aegis-client h2_preface_matches_the_profile_fixture -- --test-threads=4
+
+      - name: Keep the measured profile
+        if: steps.measure.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: chrome-profile-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            aegis-chrome-profile/chrome-stable.toml
+            aegis-chrome-profile/fixtures/h2-connection-preface.hex
+          if-no-files-found: error
+          retention-days: 7
+
+  pull-request:
+    needs: measure
+    if: needs.measure.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: chrome-profile-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/measured
+
+      - name: Admit exactly the two measured files
+        run: |
+          set -euo pipefail
+          src="${RUNNER_TEMP}/measured"
+          listing="$(cd "$src" && find . -mindepth 1 ! -type d | LC_ALL=C sort | tr '\n' ' ')"
+          test "$listing" = "./chrome-stable.toml ./fixtures/h2-connection-preface.hex "
+          test "$(stat -c %s "$src/chrome-stable.toml")" -le 65536
+          test "$(wc -l < "$src/fixtures/h2-connection-preface.hex")" -eq 1
+          grep -Eqx '[0-9a-f]{2,4096}' "$src/fixtures/h2-connection-preface.hex"
+          head -n 1 "$src/chrome-stable.toml" | grep -qx '# Chrome stable mimicry profile. Code reads this file; do not duplicate these'
+          install -m 0644 "$src/chrome-stable.toml" aegis-chrome-profile/chrome-stable.toml
+          install -m 0644 "$src/fixtures/h2-connection-preface.hex" aegis-chrome-profile/fixtures/h2-connection-preface.hex
+
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          branch="chrome-profile-refresh-${GITHUB_RUN_ID}"
+          git checkout -B "$branch"
+          git add aegis-chrome-profile/chrome-stable.toml aegis-chrome-profile/fixtures/h2-connection-preface.hex
+          test "$(git diff --cached --name-only | wc -l)" -ge 1
+          git commit -m "refresh Chrome stable mimicry profile"
+          git push -u origin HEAD
+          gh pr create --base main --head "$branch" --title "Refresh the Chrome stable mimicry profile" --body "$(cat <<'EOF'
+          Weekly Chrome stable capture updated `aegis-chrome-profile/chrome-stable.toml` and the HTTP/2 preface fixture. The profile crate tests and the HTTP/2 preface test passed in the read-only measure job.
+          EOF
+          )"

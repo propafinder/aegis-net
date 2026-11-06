@@ -1,0 +1,10 @@
+{
+  "boot_status_code": "disabled-by-marker-file",
+  "datasource": "",
+  "detail": "Cloud-init disabled by /etc/cloud/cloud-init.disabled",
+  "errors": [],
+  "extended_status": "disabled",
+  "last_update": "",
+  "recoverable_errors": {},
+  "status": "disabled"
+}

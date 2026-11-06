@@ -1,0 +1,20 @@
+table inet aegis_device_guard { # handle 5
+	chain incoming { # handle 1
+		type filter hook prerouting priority -190; policy accept;
+		iifname "eth0" fib daddr type local tcp dport 22 ct direction original ct state { established, new } ct mark set 0xa3610002 # handle 7
+	}
+
+	chain output { # handle 2
+		type filter hook output priority filter + 10; policy drop;
+		oifname "lo" counter packets 0 bytes 0 accept # handle 4
+		oifname "aegis-tun0" counter packets 0 bytes 0 accept # handle 5
+		oifname "eth0" ct direction reply ct mark 0xa3610002 ct original proto-dst 22 tcp sport 22 counter packets 0 bytes 0 accept # handle 8
+		oifname "eth0" ip6 hoplimit 255 ip6 daddr { fe80::/10, ff02::/16 } icmpv6 type { nd-router-solicit, nd-neighbor-solicit, nd-neighbor-advert } counter packets 0 bytes 0 accept # handle 11
+		counter packets 0 bytes 0 drop # handle 12
+	}
+
+	chain forward { # handle 3
+		type filter hook forward priority filter + 10; policy drop;
+		counter packets 0 bytes 0 drop # handle 13
+	}
+}

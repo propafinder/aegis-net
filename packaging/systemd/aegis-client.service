@@ -1,0 +1,46 @@
+# Rendered by install.sh during packaged or repo-based installation.
+# The packaged service defaults to a system-level client because supported
+# Linux wide profiles may require privileged networking capabilities.
+[Unit]
+Description=AEGIS client runtime
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=30
+StartLimitBurst=5
+
+[Service]
+Type=simple
+EnvironmentFile=-__AEGIS_CLIENT_ENV_FILE__
+WorkingDirectory=__AEGIS_CLIENT_STATE_DIR__
+ExecStart=__AEGIS_CLIENT_BIN__ --config __AEGIS_CLIENT_CONFIG__ --runtime-events-jsonl __AEGIS_CLIENT_RUNTIME_EVENTS_JSONL__
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=65536
+# The Ubuntu-first unit keeps system-wide networking privileges available while
+# reducing unrelated write and kernel mutation surface.
+NoNewPrivileges=true
+# Profile drop-ins reset this set before narrowing it. The base privileged
+# networking profile has no filesystem, process-control or module capabilities.
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+UMask=0077
+PrivateTmp=true
+ProtectSystem=full
+# ProtectHome hides /root and /home from the service. That is wanted, but it
+# also means a `state_path` under ~/.cache can never be written: the flush
+# fails on every relay attempt and, before 0.3.50, was discarded silently, so
+# the fleet client threw away everything the Brain learned on each restart
+# while looking healthy in every foreground check. Keep the client's state and
+# events under the state dir, which is writable, and the Brain now warns once
+# if its state path is not.
+ProtectHome=true
+ReadWritePaths=__AEGIS_CLIENT_STATE_DIR__
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

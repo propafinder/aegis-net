@@ -1,0 +1,41 @@
+--- a/src/protocol/mod.rs
++++ b/src/protocol/mod.rs
+@@ -410,7 +410,8 @@
+             // If we get here, either write blocks or we have nothing to write.
+             // Thus if read blocks, just let it return WouldBlock.
+             if let Some(message) = self.read_message_frame(stream)? {
+-                trace!("Received message {}", message);
++                // AEGIS: never format signaling or media message contents.
++                trace!("Received WebSocket message");
+                 return Ok(message);
+             }
+         }
+@@ -672,7 +673,8 @@
+     /// Received a close frame. Tells if we need to return a close frame to the user.
+     #[allow(clippy::option_option)]
+     fn do_close<'t>(&mut self, close: Option<CloseFrame<'t>>) -> Option<Option<CloseFrame<'t>>> {
+-        debug!("Received close frame: {:?}", close);
++        // AEGIS: close reasons are peer-controlled and may echo private text.
++        debug!("Received WebSocket close frame");
+         match self.state {
+             WebSocketState::Active => {
+                 self.state = WebSocketState::ClosedByPeer;
+@@ -689,7 +691,7 @@
+                 });
+ 
+                 let reply = Frame::close(close.clone());
+-                debug!("Replying to close with {:?}", reply);
++                debug!("Replying to WebSocket close frame");
+                 self.set_additional(reply);
+ 
+                 Some(close)
+@@ -721,7 +723,8 @@
+             }
+         }
+ 
+-        trace!("Sending frame: {:?}", frame);
++        // AEGIS: never format signaling or media frame contents.
++        trace!("Sending WebSocket frame");
+         self.frame.buffer_frame(stream, frame).check_connection_reset(self.state)
+     }
+ 

@@ -1,0 +1,10 @@
+AEGIS client Debian packaging notes
+==================================
+
+This package installs the Linux-first client runtime role only.
+
+It intentionally does not auto-enable `aegis-client.service`.
+Prepare `/etc/default/aegis-client` and `/etc/aegis/client/aegis.toml`, then
+enable the unit explicitly with:
+
+  systemctl enable --now aegis-client.service

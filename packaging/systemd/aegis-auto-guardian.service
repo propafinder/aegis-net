@@ -1,0 +1,31 @@
+[Unit]
+Description=AEGIS AUTO native deny guardian
+Requires=aegis-auto-guardian-watchdog.service aegis-auto-witness-topology.service aegis-auto-trace-rollback-actor.service
+After=aegis-auto-guardian-watchdog.service aegis-auto-witness-topology.service aegis-auto-trace-rollback-actor.service aegis-device-egress-guard.service local-fs.target
+Before=aegis-auto-config.service
+ConditionPathExists=/var/lib/aegis-install/client/auto-guardian-install.json
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_guardian.py serve
+RuntimeDirectory=aegis-auto-guard
+RuntimeDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=1s
+TimeoutStartSec=10s
+NoNewPrivileges=yes
+ProtectSystem=no
+ProtectHome=no
+PrivateTmp=no
+Delegate=yes
+ProtectControlGroups=no
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET
+# Inspect service-owned 0600 credentials without granting write bypass.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_PTRACE
+AmbientCapabilities=CAP_DAC_READ_SEARCH CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_PTRACE
+
+[Install]
+WantedBy=multi-user.target

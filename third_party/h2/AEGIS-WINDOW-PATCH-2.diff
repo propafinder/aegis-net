@@ -1,0 +1,33 @@
+--- a/src/proto/streams/streams.rs
++++ b/src/proto/streams/streams.rs
+@@ -1557,0 +1558,30 @@
++    /// AEGIS PATCH (receive window): see `FlowControl::grow_window`.
++    pub(crate) fn grow_recv_window(&mut self, capacity: WindowSize) -> Result<(), Reason> {
++        let mut me = self.inner.lock().unwrap();
++        let me = &mut *me;
++
++        let mut stream = me.store.resolve(self.key);
++
++        me.actions
++            .recv
++            .grow_window(capacity, &mut stream, &mut me.actions.task)
++    }
++
++    /// AEGIS PATCH (receive window): see `FlowControl::shrink_window`.
++    pub(crate) fn shrink_recv_window(&mut self, capacity: WindowSize) -> Result<(), Reason> {
++        let mut me = self.inner.lock().unwrap();
++        let me = &mut *me;
++
++        let mut stream = me.store.resolve(self.key);
++
++        me.actions.recv.shrink_window(capacity, &mut stream)
++    }
++
++    /// AEGIS PATCH (receive window): see `FlowControl::peer_window_size`.
++    pub(crate) fn peer_recv_window(&self) -> WindowSize {
++        let me = self.inner.lock().unwrap();
++        let me = &*me;
++
++        me.store[self.key].recv_flow.window_size()
++    }
++

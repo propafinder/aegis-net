@@ -1,0 +1,9 @@
+table ip aegis_auto_local_redirect { # handle 1
+	chain output { # handle 1
+		type nat hook output priority -100; policy accept;
+		socket cgroupv2 level 1 78876 counter packets 0 bytes 0 return comment "aegis-local-control" # handle 2
+		udp dport 53 counter packets 1 bytes 45 redirect to :53 comment "aegis-local-control" # handle 3
+		oifname "lo" counter packets 0 bytes 0 return comment "aegis-local-control" # handle 4
+		meta l4proto tcp counter packets 1 bytes 60 redirect to :15080 comment "aegis-local-control" # handle 5
+	}
+}

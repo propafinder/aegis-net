@@ -1,0 +1,34 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloud [seed=/var/lib/cloud/seed/nocloud]",
+  "init": {
+   "errors": [],
+   "finished": 115612.02,
+   "recoverable_errors": {
+    "WARNING": [
+     "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+    ]
+   },
+   "start": 115611.44
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 115611.32,
+   "recoverable_errors": {},
+   "start": 115611.3
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "modules-final": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "stage": null
+ }
+}

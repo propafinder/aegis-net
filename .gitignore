@@ -1,0 +1,41 @@
+/target/
+/.scratch-*/
+**/*.rs.bk
+.cargo/
+*.pem
+!scripts/release-ed25519-public.pem
+!docs/**/*.md
+AGENTS.md
+.agents/
+.codex/
+.DS_Store
+.cursor/
+.claude/
+aegis.toml
+aegis-server.toml
+client-bundle*.tar.gz
+**/__pycache__/
+/dist/
+
+drivers/windows/aegis-wfp/build/
+
+# OpenSSL CA serial counter (transient, regenerated per sign)
+*.srl
+
+# Dedicated checkout compiler cache; never store VM homes or evidence here.
+.build-cache/
+
+# Runtime evidence, private deliveries and VM disks stay outside Git. The
+# historical evidence tree lives in the archive described in
+# docs/operations/evidence-archive.md; a fixture a CI check reads goes under
+# scripts/tests/fixtures/ after review. Never include credentials or raw captures.
+/artifacts/
+*.private
+*.raw
+*.seed
+*.key
+.env
+.env.*
+
+# Native CI device-guard output (handed off to the runner, never tracked).
+/ci-output/

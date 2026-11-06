@@ -1,0 +1,6 @@
+# Release outputs are generated, not project source.
+dist/** linguist-generated=true
+# Keep the vendored upstream changelog and replayable patch context byte-exact.
+# Unified-diff blank context lines necessarily contain their leading space.
+third_party/tungstenite/AEGIS-PATCH-*.diff -text -whitespace
+third_party/tungstenite/CHANGELOG.md -text whitespace=-blank-at-eol

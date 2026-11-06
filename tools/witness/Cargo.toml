@@ -1,0 +1,25 @@
+[package]
+name = "aegis-witness"
+version = "0.3.12"
+edition.workspace = true
+license.workspace = true
+description = "AEGIS-NDR witness classifier for external traffic-shape evidence"
+# Two binaries live here; without this `cargo run -p aegis-witness` refuses to
+# pick one and every contract script that invokes it fails before it starts.
+default-run = "aegis-witness"
+
+[[bin]]
+name = "aegis-witness"
+path = "src/main.rs"
+
+[[bin]]
+name = "aegis-clienthello-compare"
+path = "src/bin/clienthello_compare.rs"
+
+[dependencies]
+aegis-fingerprint = { version = "0.3.12", path = "../../aegis-fingerprint" }
+clap.workspace = true
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

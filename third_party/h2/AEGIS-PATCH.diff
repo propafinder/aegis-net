@@ -1,0 +1,71 @@
+--- a/src/frame/headers.rs
++++ b/src/frame/headers.rs
+@@ -244,6 +244,14 @@
+         self.flags.set_end_stream()
+     }
+ 
++    /// Chrome 157 sets the HEADERS PRIORITY flag: exclusive dependence on
++    /// stream 0, weight octet 109. The net log prints that octet as 110.
++    /// Measured 2026-11-06. This crate cannot read the profile file.
++    pub fn set_measured_chrome_priority(&mut self) {
++        self.stream_dep = Some(StreamDependency::new(StreamId::from(0u32), 109, true));
++        self.flags.set_priority();
++    }
++
+     pub fn is_over_size(&self) -> bool {
+         self.header_block.is_over_size
+     }
+@@ -284,10 +292,15 @@
+ 
+         // Get the HEADERS frame head
+         let head = self.head();
++        let priority = self.stream_dep.as_ref().map(StreamDependency::headers_prefix);
+ 
+         self.header_block
+             .into_encoding(encoder)
+-            .encode(&head, dst, Some(encoder), |_| {})
++            .encode(&head, dst, Some(encoder), |dst| {
++                if let Some(prefix) = priority {
++                    dst.put_slice(&prefix);
++                }
++            })
+     }
+ 
+     fn head(&self) -> Head {
+@@ -719,14 +732,21 @@
+         if let Some(ref mut pseudo) = self.pseudo {
+             if let Some(method) = pseudo.method.take() {
+                 return Some(Method(method));
+-            }
+-
+-            if let Some(scheme) = pseudo.scheme.take() {
+-                return Some(Scheme(scheme));
+             }
+ 
++            // AEGIS PATCH: Chrome emits :authority before :scheme. Upstream h2
++            // drains Pseudo in struct-field order, which puts :scheme first and
++            // makes every request we send distinguishable from a browser's on
++            // the first HEADERS frame. Measured, both sides, same host:
++            // artifacts/live/2026-08-11/http2-pseudo-header-order.
++            // RFC 9113 6.3 requires pseudo-headers before regular fields but
++            // does not constrain their relative order, so this stays conformant.
+             if let Some(authority) = pseudo.authority.take() {
+                 return Some(Authority(authority));
++            }
++
++            if let Some(scheme) = pseudo.scheme.take() {
++                return Some(Scheme(scheme));
+             }
+ 
+             if let Some(path) = pseudo.path.take() {
+@@ -783,6 +803,10 @@
+ 
+     pub fn is_priority(&self) -> bool {
+         self.0 & PRIORITY == PRIORITY
++    }
++
++    pub fn set_priority(&mut self) {
++        self.0 |= PRIORITY;
+     }
+ }
+ 

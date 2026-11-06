@@ -1,0 +1,34 @@
+{
+ "v1": {
+  "datasource": "DataSourceConfigDrive [net,ver=2][source=/var/lib/cloud/seed/config_drive]",
+  "init": {
+   "errors": [],
+   "finished": 115619.69,
+   "recoverable_errors": {
+    "WARNING": [
+     "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+    ]
+   },
+   "start": 115619.35
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 115619.25,
+   "recoverable_errors": {},
+   "start": 115619.22
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "modules-final": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "stage": null
+ }
+}

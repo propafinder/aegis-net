@@ -1,0 +1,26 @@
+#!/usr/bin/python3 -I
+"""Test stand-in for ssh (make-invite tests only): records its argv and the
+remote program it was given, never contacts anything, and answers as the
+relay's remote program would. FAKE_SSH_LOG: where to record; FAKE_SSH_MODE:
+ok (default), refuse, malformed, fail, silent; FAKE_SSH_TOKEN: the token."""
+import json, os, sys
+
+program = sys.stdin.read()
+log = os.environ.get('FAKE_SSH_LOG')
+if log:
+    with open(log, 'a') as f:
+        f.write(json.dumps({'argv': sys.argv[1:], 'program': program}) + '\n')
+mode = os.environ.get('FAKE_SSH_MODE', 'ok')
+token = os.environ.get('FAKE_SSH_TOKEN', 'a' * 64)
+if mode == 'ok':
+    print(json.dumps({'ok': True, 'token': token}))
+elif mode == 'refuse':
+    print(json.dumps({'ok': False, 'error': 'invite_failed', 'rc': 1,
+                      'detail': 'Error: device enrollment is permanently cancelled ' + 'b' * 64}))
+elif mode == 'malformed':
+    print(json.dumps({'ok': True, 'token': 'not-a-token'}))
+elif mode == 'fail':
+    print('ssh: connect to host relay-a port 22: Operation timed out ' + 'c' * 64, file=sys.stderr)
+    sys.exit(255)
+elif mode == 'silent':
+    pass

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6E2BFA42-215F-4E4D-A14E-94FC8E7C3B80}</ProjectGuid>
+    <RootNamespace>aegis_wfp</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Driver</ConfigurationType>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <Driver_SpectreMitigation>false</Driver_SpectreMitigation>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\obj\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>aegis_wfp</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32_LEAN_AND_MEAN;UNICODE;_UNICODE;NDIS630;DBG=1</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)\ntoskrnl.lib;$(DDK_LIB_PATH)\fwpkclnt.lib;$(DDK_LIB_PATH)\netio.lib;$(DDK_LIB_PATH)\wdmsec.lib;UUID.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>DriverEntry</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="aegis_wfp.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="aegis_wfp.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="aegis_wfp.inf" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

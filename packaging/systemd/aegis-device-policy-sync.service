@@ -1,0 +1,21 @@
+[Unit]
+Description=Pull Aegis device policy from one pinned private SSH authority
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=aegis
+UMask=0077
+ExecStart=/usr/local/bin/aegis-server device-policy sync --config /etc/aegis-device-policy/sync.json
+TimeoutStartSec=80
+TimeoutStopSec=5
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/aegis-device-policy

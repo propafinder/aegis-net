@@ -1,0 +1,15 @@
+[Unit]
+Description=AEGIS AUTO authenticated clean shutdown handoff
+After=local-fs.target aegis-device-egress-guard.service aegis-foreign-policy-monitor.service ufw.service NetworkManager.service systemd-networkd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/bin/python3 -I -B /usr/local/lib/aegis/helpers/lib/aegis_auto_foreign_monitor.py --shutdown-handoff
+TimeoutStopSec=75
+NoNewPrivileges=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

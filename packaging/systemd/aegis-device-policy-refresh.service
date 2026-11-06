@@ -1,0 +1,19 @@
+[Unit]
+Description=Explicitly refresh the authoritative Aegis device policy
+
+[Service]
+Type=oneshot
+User=root
+Group=aegis-policy-export
+UMask=0077
+ExecStart=/usr/local/bin/aegis-server device --registry /var/lib/aegis-device-authority/registry.json refresh-registry --ttl-secs 900
+TimeoutStartSec=20
+TimeoutStopSec=5
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ReadWritePaths=/var/lib/aegis-device-authority

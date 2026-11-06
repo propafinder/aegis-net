@@ -1,0 +1,44 @@
+[package]
+name = "aegis-quic-boring"
+version = "0.3.50"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Chrome-fingerprint QUIC crypto provider for quinn, backed by AWS-LC/BoringSSL (SSL_set_quic_method). The TLS ClientHello is Chrome-class (JA4=Chrome); the RFC 9001 key schedule is standard."
+
+# Deliberately split into many small modules (crypto/, session/, config/, ffi/)
+# so each concern (key derivation, packet keys, header protection, the SSL
+# handshake driver, the Chrome ClientHello config, the raw FFI) stays isolated
+# and independently testable — no 15k-line monolith.
+
+[features]
+default = []
+# `boring` pulls in the AWS-LC/BoringSSL handshake driver (the actual Chrome
+# mimicry). Without it, only the transport-crypto primitives (RFC 9001 key
+# schedule, packet/header keys) compile — these are fingerprint-invisible and
+# fully unit-testable against the RFC 9001 Appendix A vectors on any platform.
+boring = ["dep:aws-lc-sys", "dep:brotli", "dep:aegis-chrome-profile"]
+
+[dependencies]
+quinn-proto = { version = "0.11", default-features = false, features = ["rustls-ring"] }
+ring = "0.17"
+bytes = "1"
+aes = "0.8"
+tracing = "0.1"
+zeroize.workspace = true
+
+# Must track the workspace pin. Two aws-lc-sys versions in one binary means
+# two copies of libcrypto and two different notions of which signature
+# algorithms exist — and 0.39.1 has no ML-DSA, which is exactly what the
+# Chrome canonical-JA4 parity depends on.
+aws-lc-sys = { workspace = true, optional = true }
+brotli = { version = "8", optional = true }
+aegis-chrome-profile = { version = "0.3.50", path = "../aegis-chrome-profile", optional = true }
+chacha20 = "0.9"
+
+[target.'cfg(windows)'.dependencies]
+rustls-native-certs.workspace = true
+rustls-pki-types = { version = "1", features = ["std"] }
+
+[dev-dependencies]
+hex = "0.4"
+tempfile = "3"

@@ -1,0 +1,5 @@
+[thresholds]
+legacy_tls = 0.85
+https_ws = 0.85
+masque_derived = 0.85
+grpc_stream = 0.60

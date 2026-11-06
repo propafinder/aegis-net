@@ -1,0 +1,11 @@
+[Unit]
+Description=Check live Aegis device policy adoption every 30 seconds
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=30
+AccuracySec=1
+Unit=aegis-device-policy-health.service
+
+[Install]
+WantedBy=timers.target

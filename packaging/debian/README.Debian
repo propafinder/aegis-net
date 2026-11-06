@@ -1,0 +1,18 @@
+AEGIS Debian packaging notes
+===========================
+
+This package intentionally does not auto-enable `aegis-server.service` or
+`aegis-client.service` on install.
+
+Why:
+- AEGIS has explicit `server` and `client` roles.
+- Operators must choose which role belongs on which host.
+- The Linux-first client runtime can require privileged networking setup.
+
+Recommended operator flow:
+1. Install the package.
+2. Review `/etc/default/aegis-server` or `/etc/default/aegis-client`.
+3. Prepare config and certificates under `/etc/aegis/...`.
+4. Explicitly enable the needed unit with `systemctl enable --now ...`.
+
+The preset policy lives in `/usr/lib/systemd/system-preset/90-aegis.preset`.

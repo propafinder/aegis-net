@@ -1,0 +1,11 @@
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aegis-server:local
+    network_mode: host
+    volumes:
+      - ./aegis-server.toml:/etc/aegis/aegis-server.toml:ro
+      - ./certs:/etc/aegis/certs:ro
+    command: ["--config", "/etc/aegis/aegis-server.toml"]

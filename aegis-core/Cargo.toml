@@ -1,0 +1,69 @@
+[package]
+name = "aegis-core"
+version = "0.3.50"
+edition.workspace = true
+license.workspace = true
+description = "AEGIS-NDR shared library: relay protocol, TLS helpers, brain, strategies"
+
+[dependencies]
+h2.workspace = true
+http.workspace = true
+subtle = "2.6"
+bytes.workspace = true
+tokio.workspace = true
+tokio-tungstenite.workspace = true
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+sha2.workspace = true
+md5.workspace = true
+rand.workspace = true
+# Evolved packet-manipulation strategies. Pure/offline crate (no I/O of its own);
+# strategies/geneva.rs is the bridge that executes one on the wire.
+aegis-geneva = { version = "0.3.50", path = "../aegis-geneva" }
+hex.workspace = true
+chacha20poly1305.workspace = true
+hkdf.workspace = true
+zeroize.workspace = true
+dirs.workspace = true
+socket2 = "0.6"
+libc = "0.2"
+mlua = { version = "0.9", optional = true, features = ["lua54", "vendored"] }
+tempfile = "3"
+rustls.workspace = true
+tokio-rustls.workspace = true
+rcgen = { workspace = true, optional = true, features = ["x509-parser", "zeroize"] }
+time = { version = "0.3", optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3.6.3", features = ["apple-native"] }
+
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3.6.3", features = ["windows-native"] }
+sha1 = "0.10"
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading", "Win32_Storage_FileSystem", "Win32_System_LibraryLoader", "Win32_System_SystemInformation", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_NetworkManagement_WindowsFilteringPlatform", "Win32_Networking_WinSock", "Win32_System_Rpc"] }
+
+[features]
+default = []
+# Explicit, debug-only hosted scheduler diagnostic for core and dependent test binaries.
+diagnostic-mach-time-constraint = []
+# Explicit raw legacy freshness mode; both peers must use this feature.
+legacy-challenge-v1 = []
+device-enrollment = ["dep:rcgen", "dep:time"]
+lua = ["dep:mlua"]
+# Отправка полного IPv4-пакета через raw-сокет (Linux, обычно нужен root / CAP_NET_RAW).
+raw-socket = []
+# Tier 2.3 scaffolding: macOS BPF (/dev/bpf*) packet observer backend.
+# Default off; live implementation requires rooted Mac for ioctl
+# (BIOCSETIF / BIOCIMMEDIATE / BIOCSETF) live testing. Currently exposes
+# only the enum variant + can_start=false stub so future implementation
+# slice lands cleanly without enum-churn at call sites.
+macos-bpf = []
+
+[dev-dependencies]
+rcgen.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+toml.workspace = true

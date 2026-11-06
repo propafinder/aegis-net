@@ -1,0 +1,27 @@
+[package]
+name = "aegis-geneva"
+version = "0.3.50"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Geneva-style evolvable packet-manipulation strategies: strategy DSL, packet-action engine, simulated censors, an offline genetic trainer, and an opt-in bounded Linux wire bridge."
+
+# Deliberately split into many small modules — packet/, syntax/, actions/,
+# engine/, evolve/, censor/ — each independently testable. This crate is
+# library has no socket I/O; live-linux explicitly enables a separate bounded
+# executable. Evolution and byte-level unit tests remain independent of networking.
+
+[features]
+default = []
+live-linux = ["dep:libc"]
+
+[[bin]]
+name = "aegis-geneva-bridge"
+path = "src/bin/bridge.rs"
+required-features = ["live-linux"]
+
+[dependencies]
+rand = "0.8"
+thiserror = "2"
+libc = { version = "0.2", optional = true }
+
+[dev-dependencies]

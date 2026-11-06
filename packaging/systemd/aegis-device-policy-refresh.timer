@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh the authoritative Aegis policy before expiry
+
+[Timer]
+OnActiveSec=2s
+OnUnitInactiveSec=120s
+AccuracySec=1s
+RandomizedDelaySec=5s
+Unit=aegis-device-policy-refresh.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,149 @@
+# Скопируйте в aegis.toml и подставьте relay при необходимости.
+# This is an explicit direct/legacy shared-token example, not a fronted or
+# device-enrolled deployment. Its values are examples, not current beta defaults.
+# For fronted legacy TCP use ["grpc_stream"]. Device inner TLS also requires
+# TCP ["grpc_stream"], UDP [] or ["grpc_datagram"], explicit outer CA, Rustls,
+# disabled wire mimicry and a nonzero connect timeout; use the device renderer.
+# See docs/operator-guides/protocols-and-transports.md and docs/operations/inner-tls-v1.md.
+
+mode = "direct" # "direct" | "relay" | "auto"
+stealth_mode = "balanced" # unified stealth entrypoint; materializes local_hardened posture and auto-selects a bounded direct stack_profile if none is pinned explicitly
+# local_stealth_profile = "local_hardened" # lower-level override if you want only the local posture without the higher-level balanced mode
+# process_alias = "netd-helper"
+
+[ingress]
+primary = "wide"
+allow_fallback = false
+
+[ingress.wide]
+enabled = true
+platform_backend = "auto" # "auto" | "linux_redirect" | "linux_tproxy" | "windivert" | "windows_wfp_ale" | "macos_pf" (windows_wfp_ale is config surface only; macOS PF currently covers helper-backed TCP-only + repo-side DNS-preview contours; broader system_wide stays boundary-only)
+rollout_profile = "output_only_safe" # "output_only_safe" | "prerouting_scoped" | "transparent_privileged"
+# prerouting_interface = "eth0"       # required for "prerouting_scoped" and recommended happy-path for "transparent_privileged"; keep aligned with AEGIS_WIDE_INTERFACE in Linux helpers
+listen = "0.0.0.0:15080"
+# safe baseline keeps DNS interception off by default; use the privileged
+# linux_tproxy profile when you need a supported DNS contour.
+capture_dns = false
+udp_capture_contract = "preview_allowlist_only" # current stable class; "generic_capture_unstable" enables a broader Linux/IPv4 UDP path, but it is still experimental/partial and maps to boundary-only on macos_pf system_wide
+dns_port = 53 # narrow Linux/IPv4 DNS preview currently follows this configured destination port instead of being hard-wired to :53
+udp_preview_ports = [] # optional extra intercepted UDP destination ports for the same narrow Linux preview path
+default_mark = 0 # set to 1 with rollout_profile="transparent_privileged" and platform_backend="linux_tproxy"
+# For a privileged DNS profile switch to:
+# platform_backend = "linux_tproxy"
+# rollout_profile = "transparent_privileged"
+# prerouting_interface = "eth0"
+# capture_dns = true
+# default_mark = 1
+# dns_preview_listen = "127.0.0.1:53"
+# dns_relay_upstream = "1.1.1.1:53" # reached through UDP relay plan, never native
+
+[socks]
+listen = "127.0.0.1:0"
+
+[direct]
+# Runtime learning stays in RAM by default. Opt in only if destination metadata
+# retention is acceptable; relay mode ignores this setting and stays RAM-only.
+persist_state = false
+state_path = "~/.cache/aegis/state.json"
+strategies = ["multisplit", "passthrough"]
+# опционально: "oob_data"
+#
+# Raw-dependent packet strategies are temporarily opt-in while their wire-effect
+# result contract and production-sized TLS/MTU acceptance are being hardened:
+# "ttl_desync", "ip_frag", "fake_disorder", "checksum_trick", "fake_rst",
+# "overlap", "geneva". Do not advertise them as production-active merely
+# because the canonical TCP payload succeeded.
+#
+# Evolved Geneva strategy, in the Geneva DSL. When set, the "geneva" strategy
+# becomes selectable and this program decides the decoy plan. The offline
+# engine/trainer supports the full Geneva grammar; the live bridge currently
+# accepts exact outbound PSH-ACK pass/duplicate and bounded TTL replacement,
+# with one unchanged pass branch and at most eight decoys. Payload tampering is
+# accepted only inside a TTL-bounded branch and only after live packet capture
+# has proved that TTL expires before the destination. Fragment, checksum, flag,
+# unsafe payload, inbound, and non-matching live actions fail closed instead of
+# being mapped to a different packet. Train candidates offline with
+# `cargo run -p aegis-geneva --example train`, then use only the live subset.
+#
+# Requires raw IPv4 + exact TCP sequence numbers: build with `--features
+# raw-socket` and run with CAP_NET_RAW/CAP_NET_ADMIN, otherwise the planner
+# filters it out rather than pretending it is active. A program that parses but
+# has no exact live decoy effect is rejected at startup. A payload-tamper plan
+# also refuses its first use until the same destination has a capture-backed hop
+# observation; keep `passthrough` after `geneva` for that safe cold-path fallback.
+# geneva_strategy = '[TCP:flags:PA]-duplicate(tamper{IP:ttl:replace:4}(),)-| \/'
+epsilon = 0.1
+first_chunk_timeout_ms = 8000
+freeze_threshold_bytes = 16384
+degraded_latency_ms = 5000
+tls_grease = false
+sni_case_obfuscate = false
+# Post-hoc SNI replacement is a laboratory/decoy option, not authenticated
+# domain fronting: rewriting the real application hello can invalidate Finished.
+# tls_sni_replace = "front-domain.example"
+inject_opaque_extension = false
+ghost_jitter_before_attempt = true
+# stack_profile = "linux" # explicit override; otherwise stealth_mode="balanced" rotates a bounded userspace stack profile automatically
+# wire_mimicry_mode = "linux_experimental_ttl_preface" # strict: requires capture-backed TTL observation (prior SYN-ACK). Refuses preface on cold state — protective but never fires на relay-primarily deployments
+# wire_mimicry_mode = "linux_experimental_ttl_preface_safe_default_cold" # v0.1.2 cold-start permissive: uses kernel-default TTL=64 when no capture hint; fires preface immediately, switches to observed TTL once packet_observer warms. Recommended для relay-primarily deployments хотящих wire-active events на cold state
+# lua_order_script = "~/.config/aegis/order.lua"
+# lua_chunk_script = "~/.config/aegis/order.lua"
+# ghost_profile = "~/.config/aegis/ghost.json"
+
+[relay]
+server = "127.0.0.1:8443"
+server_name = "localhost"
+auth_token = "change-me"
+# Legacy TLS is an explicit compatibility opt-in for old relays. Its HTTP/1.1-only
+# ClientHello has a distinguishable JA4; do not treat fallback as browser parity.
+# If an old relay requires it, add "legacy_tls" to transport_priority deliberately.
+transport_priority = ["https_ws", "grpc_stream", "masque_derived"]
+# Optional LEGACY shared-token UDP-only plan. TCP may stay on grpc_stream
+# through a CDN while UDP explicitly tries direct MASQUE then grpc_datagram.
+# Direct MASQUE exposes the origin/source and conflicts with a Cloudflare-only
+# UDP ingress guard. Inner TLS forbids MASQUE; use [] or ["grpc_datagram"].
+# udp_transport_priority = ["masque_derived", "grpc_datagram"]
+# Optional Phase C relay endpoint pool. Leave empty to use the single
+# relay.server/server_name pair above.
+# endpoints = [
+#   { server = "relay-a.example.org:443", server_name = "relay-a.example.org" },
+#   { server = "relay-b.example.org:443", server_name = "relay-b.example.org", masque_server = "relay-b.example.org:443" },
+# ]
+websocket_path = "/socket"
+websocket_path_pool = ["/ws", "/realtime/connect", "/aegis/ws"]
+grpc_path = "/rpc.Tunnel/Open"
+grpc_path_pool = ["/cdn.tunnel.v1.Session/Open", "/grpc.gateway.v1.Proxy/Connect", "/aegis.tunnel.v1.TunnelService/Open"]
+masque_path = "/.well-known/masque/udp"
+masque_path_pool = ["/.well-known/masque/connect-udp", "/masque/v1/udp", "/relay/datagram"]
+# masque_server = "127.0.0.1:8443"   # UDP endpoint; по умолчанию совпадает с relay.server
+# masque_server_name = "127.0.0.1"    # separate TLS authority; installer derives it from masque_server
+connect_timeout_ms = 5000
+masque_keep_alive_interval_ms = 10000 # keep MASQUE TCP tunnels alive across idle HTTP keep-alive gaps; set 0 to disable
+masque_max_idle_timeout_ms = 120000 # must stay above keep_alive_interval; set 0 to disable idle timeout entirely
+# tls_profile_target_class = "https_ws" # Phase B advisory JA3/browser target class; telemetry only until TLS adapter is enabled
+# tls_backend = "chrome_like_experimental" # legacy default preference; optional AWS-LC backend when chrome-like-tls is compiled.
+#   Archived evidence-archive/live/2026-07-04/chrome-like-tls-ja4-parity is a dated
+#   JA4 comparison, not byte identity or acceptance for every release/profile.
+#   Feature-less legacy builds can degrade to Rustls and report that degradation.
+# tls_backend = "rustls" # required for device inner TLS and real ECH; its ClientHello does not inherit legacy Chrome parity.
+# ca_cert = "certs/ca.pem"   # для dev-сертификата
+# ech_config_list = "certs/relay.echconfig.bin" # optional pinned, base64-decoded HTTPS/SVCB `ech` value; requires rustls and fails closed unless ECH is accepted
+
+[relay.policy]
+# Despite this compatibility name, surface rotation is keyed to drift epochs.
+rotate_transports_per_session = true
+max_transport_attempts = 4
+write_chunk_size = 16384
+inter_chunk_delay_ms = 0
+drift_epoch_secs = 900
+# Adaptive transport ordering: once enough live outcomes accumulate, the Brain
+# can adapt the legacy priority plan subject to configured policy and attempt
+# bounds. This does not make forbidden enrolled transports eligible or permit
+# weaker authentication on retry. The flag controls the uncalibrated adaptive
+# path; available calibration or recent-selection evidence can still adapt the
+# configured plan when false. Families absent from the plan are not added back.
+# Drift rotation is independent of this flag.
+adaptive_transport = true
+# Optional provider-specific live-proof/deployment pin. Leave unset for normal
+# drift-based relay surface rotation.
+# surface_profile_id = "cli_https_compact"

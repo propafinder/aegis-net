@@ -1,0 +1,25 @@
+table inet aegis_device_guard { # handle 11
+	chain incoming { # handle 1
+		type filter hook prerouting priority -190; policy accept;
+		iifname "eth0" fib daddr type local tcp dport 22 ct direction original ct state { established, new } ct mark set 0xa3610002 # handle 10
+	}
+
+	chain output { # handle 2
+		type filter hook output priority filter + 10; policy drop;
+		oifname "lo" counter packets 0 bytes 0 accept # handle 4
+		oifname "aegis-tun0" counter packets 0 bytes 0 accept # handle 5
+		socket cgroupv2 level 2 "system.slice/ssh.service" counter packets 0 bytes 0 accept comment "aegis-v2-9de5f22dcd5c03bcc894291c8a094b095662e4f4b5f8ff67482a4351c0bb59f1" # handle 6
+		ip daddr 127.0.0.1 ct status dnat tcp dport 15080 counter packets 0 bytes 0 accept # handle 7
+		ip daddr 127.0.0.1 ct status dnat udp dport 15081 counter packets 0 bytes 0 accept # handle 8
+		oifname "eth0" ct direction reply ct mark 0xa3610002 ct original proto-dst 22 tcp sport 22 counter packets 0 bytes 0 accept # handle 11
+		oifname "eth0" meta nfproto ipv4 udp sport 68 udp dport 67 socket cgroupv2 level 2 "system.slice/systemd-networkd.service" counter packets 0 bytes 0 accept comment "aegis-v2-e3ad90dea9c2f096f331521ece32870ded8dacc10b72f7ba8cb7205f94521e54" # handle 12
+		oifname "eth0" meta nfproto ipv6 udp sport 546 udp dport 547 socket cgroupv2 level 2 "system.slice/systemd-networkd.service" counter packets 0 bytes 0 accept comment "aegis-v2-e3ad90dea9c2f096f331521ece32870ded8dacc10b72f7ba8cb7205f94521e54" # handle 13
+		oifname "eth0" ip6 hoplimit 255 ip6 daddr { fe80::/10, ff02::/16 } icmpv6 type { nd-router-solicit, nd-neighbor-solicit, nd-neighbor-advert } counter packets 0 bytes 0 accept # handle 16
+		counter packets 0 bytes 0 drop # handle 17
+	}
+
+	chain forward { # handle 3
+		type filter hook forward priority filter + 10; policy drop;
+		counter packets 0 bytes 0 drop # handle 18
+	}
+}

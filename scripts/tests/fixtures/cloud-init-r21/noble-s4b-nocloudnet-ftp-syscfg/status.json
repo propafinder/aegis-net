@@ -1,0 +1,34 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloudNet [seed=ds_config_seedfrom,ftp://seed.invalid:2121/]",
+  "init": {
+   "errors": [],
+   "finished": 116227.55,
+   "recoverable_errors": {
+    "WARNING": [
+     "Device '/dev/overlay' did not exist. cannot resize: dev=overlay mnt_point=/ path=/"
+    ]
+   },
+   "start": 116227.02
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 116226.9,
+   "recoverable_errors": {},
+   "start": 116226.89
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "modules-final": {
+   "errors": [],
+   "finished": null,
+   "recoverable_errors": {},
+   "start": null
+  },
+  "stage": null
+ }
+}

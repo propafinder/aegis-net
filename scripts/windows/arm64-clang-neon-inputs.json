@@ -1,0 +1,15 @@
+{
+  "clang_version": "21.1.8",
+  "xwin_version": "0.10.0",
+  "sdk_version": "10.0.26100",
+  "crt_version": "14.44.17.14",
+  "clang_headers": {
+    "intrin.h": "d317b06ca10b7a931fd95172be43e6c26eb990c72f4bb10a87f09b051eb7e677",
+    "intrin0.h": "085c456a603387cb0a7c19fbeba0d0f26237988c2346085b5916bee874830b3e",
+    "arm64intr.h": "183845bfa6f0bae53748d5706568fe3d8830c5c720823152eacb107e7c234046",
+    "arm_neon.h": "313df8f7c6eb48551871d403158cb57c85ab5761fa3c433a041e5901b816cfcb",
+    "arm_vector_types.h": "6fe5730cbf5b4760620d643e5b44c9abbb13969b168dd7733252158503003034",
+    "arm_bf16.h": "87f7bc1cb7aa53a85347bd4e1855cccd45599408bb106e66515519c1033a6a3d"
+  },
+  "xwin_tree_sha256": "cdd054f54d7784052bac93e6cf1326515c9862852c2c265d78c518896de5d702"
+}
